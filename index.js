@@ -1,4 +1,5 @@
 require("dotenv").config(); // Lädt .env, falls du lokal testest
+console.log("TOKEN:", process.env.TOKEN);
 const {
     Client,
     GatewayIntentBits,
