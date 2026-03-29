@@ -1,8 +1,8 @@
 module.exports = {
     // Rollen, die Zugriff auf bestimmte Commands haben
-    panelRoles: ["1485720583898661036", "1485720724986663122"], // /panel
-    abmeldenRoles: ["1376953825088376843"], // /abmelden
-    clearRoles: ["1485720583898661036"], // /clear
+    panelRoles: ["1376953825088376843", "1485722228929728694"], // /panel
+    abmeldenRoles: ["1376207536579022959"], // /abmelden
+    clearRoles: ["1376207535408681033"], // /clear
 
     // Mod-Rolle für allgemeine Rechte
     modRoleId: "1376953825088376843",
@@ -40,5 +40,11 @@ module.exports = {
         "1376953107606405190",
         "1376953244097577081",
         "1376953292688588870"
+    ],
+
+    // Rollen, die einem neuen Mitglied automatisch gegeben werden
+    joinRoles: [
+        "1485722559034032168", // Rolle 1
+        "1376207540064489644"  // Rolle 2
     ]
 };
