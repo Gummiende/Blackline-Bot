@@ -1,5 +1,6 @@
 require("dotenv").config();
 console.log("TOKEN:", process.env.TOKEN);
+
 const {
     Client,
     GatewayIntentBits,
@@ -50,7 +51,7 @@ const client = new Client({
 });
 
 // 🔥 Embed Template
-function createEmbed({ title, member, executor, reason, extraFields, fromText }) {
+function createEmbed({ title, member, executor, reason, extraFields, fromText, zeitraum }) {
     const embed = new EmbedBuilder()
         .setColor("#660909")
         .setTitle(title || "Aktion")
@@ -58,6 +59,7 @@ function createEmbed({ title, member, executor, reason, extraFields, fromText })
         .addFields(
             { name: "Wer:", value: `<@${member.id}>`, inline: true },
             { name: "Von:", value: fromText || `<@${executor.id}>`, inline: true },
+            { name: "Zeitraum:", value: zeitraum || "Nicht angegeben" },
             { name: "Grund:", value: reason || "Kein Grund angegeben" }
         );
 
@@ -270,17 +272,109 @@ client.on(Events.InteractionCreate, async interaction => {
         }
 
         // =====================
+        // BUTTONS FÜR ABMELDUNG
+        // =====================
+        if (interaction.isButton()) {
+            const [action, type, userId] = interaction.customId.split("_");
+            if (action === "abmelden") {
+                const member = await interaction.guild.members.fetch(userId);
+                const originalEmbed = interaction.message.embeds[0];
+                const zeitraum = originalEmbed.fields.find(f => f.name === "Zeitraum")?.value || "Nicht angegeben";
+
+                if (type === "accept") {
+                    const embed = new EmbedBuilder()
+                        .setColor("#660909")
+                        .setTitle("Abmeldung akzeptiert")
+                        .setThumbnail(originalEmbed.thumbnail?.url)
+                        .addFields(
+                            { name: "Wer:", value: `<@${member.id}>`, inline: true },
+                            { name: "Von:", value: `<@${interaction.user.id}>`, inline: true },
+                            { name: "Zeitraum:", value: zeitraum }
+                        )
+                        .addFields({
+                            name: "📅 Datum:",
+                            value: `<t:${Math.floor(Date.now() / 1000)}:f>`
+                        })
+                        .setFooter({
+                            text: `Blackline Bot • ausgeführt von ${interaction.user.username}`,
+                            iconURL: "https://cdn.discordapp.com/attachments/1486411922084724889/1486418577463705831/BLP_Logo_2.png"
+                        });
+
+                    await member.send({ content: `📢 Deine Abmeldung wurde akzeptiert!`, embeds: [embed] }).catch(() => {});
+                    await interaction.update({ content: `✅ Abmeldung von <@${member.id}> akzeptiert!`, components: [] });
+                }
+
+                if (type === "reject") {
+                    const modal = new ModalBuilder()
+                        .setCustomId(`abmelden_reject_modal_${userId}_${interaction.user.id}`)
+                        .setTitle("Abmeldung ablehnen");
+
+                    modal.addComponents(
+                        new ActionRowBuilder().addComponents(
+                            new TextInputBuilder()
+                                .setCustomId("rejectReason")
+                                .setLabel("Grund der Ablehnung")
+                                .setStyle(TextInputStyle.Paragraph)
+                                .setRequired(true)
+                        )
+                    );
+
+                    return interaction.showModal(modal);
+                }
+            }
+        }
+
+        // =====================
         // MODALS
         // =====================
         if (interaction.isModalSubmit()) {
             const split = interaction.customId.split("_");
+
+            // ❌ Ablehnung der Abmeldung
+            if (interaction.customId.startsWith("abmelden_reject_modal_")) {
+                const userId = split[4];
+                const moderatorId = split[5];
+
+                const member = await interaction.guild.members.fetch(userId);
+                const reason = interaction.fields.getTextInputValue("rejectReason");
+                const originalEmbed = interaction.message.embeds[0];
+
+                const embed = new EmbedBuilder()
+                    .setColor("#660909")
+                    .setTitle("Abmeldung abgelehnt")
+                    .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png")
+                    .addFields(
+                        { name: "Wer:", value: `<@${member.id}>`, inline: true },
+                        { name: "Von:", value: `<@${moderatorId}>`, inline: true },
+                        { name: "Zeitraum:", value: originalEmbed.fields.find(f => f.name === "Zeitraum")?.value || "Nicht angegeben" },
+                        { name: "Grund der Ablehnung:", value: reason }
+                    )
+                    .addFields({
+                        name: "📅 Datum:",
+                        value: `<t:${Math.floor(Date.now() / 1000)}:f>`
+                    })
+                    .setFooter({
+                        text: `Blackline Bot • ausgeführt von <@${moderatorId}>`,
+                        iconURL: "https://cdn.discordapp.com/attachments/1486411922084724889/1486418577463705831/BLP_Logo_2.png"
+                    });
+
+                await member.send({ content: `📢 Deine Abmeldung wurde abgelehnt!`, embeds: [embed] }).catch(() => {});
+                await interaction.reply({ content: `❌ Abmeldung von <@${member.id}> abgelehnt!`, flags: 64 });
+
+                const originalMessage = await interaction.channel.messages.fetch(interaction.message.id);
+                if (originalMessage) originalMessage.edit({ components: [] });
+                return;
+            }
+
+            // =====================
+            // Rank, Einstellung, Kündigung, Sanktion Modals
+            // =====================
             const type = split[1]; // rank, einstellung, kuendigung, sanktion
             const userId = split[2];
             const member = await interaction.guild.members.fetch(userId);
 
             const reason = interaction.fields.getTextInputValue("reason");
             const fromText = interaction.fields.getTextInputValue("fromText");
-
             let title = "";
             let channelId = config.defaultLogChannelId;
             let extraFields = [];
