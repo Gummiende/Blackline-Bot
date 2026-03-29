@@ -336,7 +336,7 @@ client.on(Events.InteractionCreate, async interaction => {
             }
 
             const abmeldungEmbed = new EmbedBuilder()
-                .setColor(action === "accept" ? "#00FF00" : "#FF0000")
+                .setColor(action === "accept" ? "#660909" : "#660909")
                 .setTitle(action === "accept" ? "Abmeldung akzeptiert" : "Abmeldung abgelehnt")
                 .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png")
                 .addFields(
