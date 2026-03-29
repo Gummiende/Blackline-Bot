@@ -120,8 +120,7 @@ client.on(Events.InteractionCreate, async interaction => {
                     .setTitle("Neue Abmeldung")
                     .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png")
                     .addFields(
-                        { name: "Wer:", value: zeitraum, inline: true },
-                        { name: "Von:", value: zeitraum, inline: true },
+                        { name: "Wer:", value: `<@${interaction.user.id}>`, inline: true },
                         { name: "Zeitraum:", value: zeitraum },
                         { name: "Grund:", value: grund || "Kein Grund angegeben" }
                     )
@@ -179,7 +178,6 @@ client.on(Events.InteractionCreate, async interaction => {
                 const newRoleId = interaction.values[0];
                 const member = await interaction.guild.members.fetch(userId);
 
-                // Alte Rollen entfernen
                 const oldRoles = member.roles.cache.filter(r =>
                     rankRoles.some(rr => rr.id === r.id) && !keepRoles.includes(r.id)
                 );
@@ -188,10 +186,8 @@ client.on(Events.InteractionCreate, async interaction => {
                     await member.roles.remove(role.id).catch(console.error);
                 }
 
-                // Neue Rolle hinzufügen
                 await member.roles.add(newRoleId);
 
-                // Modal für Grund + Von-Text
                 const modal = new ModalBuilder()
                     .setCustomId(`modal_rank_${userId}_${newRoleId}_${oldRole ? oldRole.id : "none"}`)
                     .setTitle("Rank Änderung");
@@ -343,8 +339,8 @@ client.on(Events.InteractionCreate, async interaction => {
                 .setTitle(action === "accept" ? "Abmeldung akzeptiert" : "Abmeldung abgelehnt")
                 .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png")
                 .addFields(
-                    { name: "Wer:", value: zeitraum, inline: true },
-                    { name: "Von:", value: zeitraum, inline: true },
+                    { name: "Wer:", value: `<@${member.id}>`, inline: true },
+                    { name: "Von:", value: `<@${interaction.user.id}>`, inline: true },
                     { name: "Zeitraum:", value: zeitraum },
                     { name: "Grund:", value: grund || "Kein Grund angegeben" }
                 )
