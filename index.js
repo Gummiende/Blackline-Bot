@@ -77,7 +77,7 @@ function createEmbed({ title, member, executor, reason, extraFields, fromText })
 }
 
 // ✅ READY
-client.once("clientReady", () => {
+client.once("ready", () => {
     console.log("✅ Blackline Bot online!");
 });
 
