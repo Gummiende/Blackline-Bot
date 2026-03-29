@@ -45,15 +45,43 @@ const client = new Client({
     ]
 });
 
-// 🔥 Embed Template
-function createEmbedAbmeldung({ title, member, executor, grund, zeitraum }) {
+// 🔥 Embed Template für Aktionen
+function createEmbed({ title, member, executor, reason, extraFields, fromText }) {
     const embed = new EmbedBuilder()
         .setColor("#660909")
-        .setTitle(title || "Abmeldung")
+        .setTitle(title || "Aktion")
         .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png")
         .addFields(
-            { name: "Wer:", value: zeitraum, inline: true },
-            { name: "Von:", value: zeitraum, inline: true },
+            { name: "Wer:", value: `<@${member.id}>`, inline: true },
+            { name: "Von:", value: fromText || `<@${executor.id}>`, inline: true },
+            { name: "Grund:", value: reason || "Kein Grund angegeben" }
+        );
+
+    if (extraFields) embed.addFields(extraFields);
+
+    embed.addFields({
+        name: "📅 Datum:",
+        value: `<t:${Math.floor(Date.now() / 1000)}:f>`
+    });
+
+    embed.setFooter({
+        text: `Blackline Bot • ausgeführt von ${executor.username}`,
+        iconURL: "https://cdn.discordapp.com/attachments/1486411922084724889/1486418577463705831/BLP_Logo_2.png"
+    }).setTimestamp();
+
+    return embed;
+}
+
+// 🔥 Embed für Abmeldung
+function createEmbedAbmeldung({ member, executor, grund, zeitraum, accepted }) {
+    const embed = new EmbedBuilder()
+        .setColor(accepted ? "#00FF00" : "#FF0000")
+        .setTitle(accepted ? "Abmeldung akzeptiert" : "Abmeldung abgelehnt")
+        .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png")
+        .addFields(
+            { name: "Wer:", value: `<@${member.id}>`, inline: true },
+            { name: "Von:", value: `<@${executor.id}>`, inline: true },
+            { name: "Zeitraum:", value: zeitraum },
             { name: "Grund:", value: grund || "Kein Grund angegeben" }
         )
         .setFooter({
@@ -154,24 +182,25 @@ client.on(Events.InteractionCreate, async interaction => {
         // -------------------
         if (interaction.isButton()) {
             const parts = interaction.customId.split("_");
-            const action = parts[1];
+            const action = parts[1]; // accept oder reject
             const userId = parts[2];
             const zeitraum = parts[3];
             const grund = parts.slice(4).join("_"); // Falls Leerzeichen oder _ im Grund
 
             const member = await interaction.guild.members.fetch(userId);
 
-            if (interaction.user.id !== userId) {
-                return interaction.reply({ content: "❌ Du darfst diesen Button nicht benutzen!", ephemeral: true });
+            // Nur Moderatoren dürfen die Buttons klicken
+            if (!interaction.member.roles.cache.has(config.modRoleId)) {
+                return interaction.reply({ content: "❌ Keine Berechtigung!", ephemeral: true });
             }
 
             // Embed erstellen
             const embed = createEmbedAbmeldung({
-                title: action === "accept" ? "Abmeldung akzeptiert" : "Abmeldung abgelehnt",
                 member,
                 executor: interaction.user,
                 grund,
-                zeitraum
+                zeitraum,
+                accepted: action === "accept"
             });
 
             // DM an Nutzer
@@ -188,10 +217,22 @@ client.on(Events.InteractionCreate, async interaction => {
         }
 
         // -------------------
-        // Andere Interactions (Rank, Modal etc.)
+        // SELECT MENUS, MODALS etc.
         // -------------------
-        // Hier kann der restliche Code für SelectMenus und Modals bleiben wie vorher
-        // ...
+        if (interaction.isStringSelectMenu()) {
+            // Dein bisheriger Code für Panel, Rank Auswahl etc.
+            // ...
+        }
+
+        if (interaction.isUserSelectMenu()) {
+            // Dein bisheriger Code für User Auswahl und Modals
+            // ...
+        }
+
+        if (interaction.isModalSubmit()) {
+            // Dein bisheriger Code für Modals Rank, Einstellung, Kündigung, Sanktion
+            // ...
+        }
 
     } catch (err) {
         console.error("Fehler bei Interaction:", err);
