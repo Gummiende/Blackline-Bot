@@ -1,15 +1,24 @@
 module.exports = {
+    // Rollen, die Zugriff auf bestimmte Commands haben
+    panelRoles: ["1376953825088376843", "1485722228929728694"], // /panel
+    abmeldenRoles: ["1376207536579022959"], // /abmelden
+    clearRoles: ["1376207535408681033"], // /clear
+
+    // Mod-Rolle für allgemeine Rechte
     modRoleId: "1376953825088376843",
 
+    // Log Channels
     einstellungLogChannelId: "1486406107277819955",
     kuendigungLogChannelId: "1486406237670080674",
     rankLogChannelId: "1486406107277819955",
     sanktionLogChannelId: "1486405963551608904",
     defaultLogChannelId: "1487155479175106661",
 
+    // Abmeldung Channels
     abmeldungModerationChannelId: "1487269383238713487",
     abmeldungPublicChannelId: "1486405878029750446",
 
+    // Rollen für Einstellung
     einstellungRoles: [
         "1485722228929728694",
         "1376953825088376843",
