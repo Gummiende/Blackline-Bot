@@ -1,5 +1,4 @@
 const { REST, Routes, SlashCommandBuilder } = require("discord.js");
-console.log("REST PUT Body:", commands);
 
 const commands = [
     new SlashCommandBuilder()
