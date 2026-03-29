@@ -290,12 +290,17 @@ client.on(Events.InteractionCreate, async interaction => {
                         iconURL: "https://cdn.discordapp.com/attachments/1486411922084724889/1486418577463705831/BLP_Logo_2.png"
                     });
 
+                // DM an Benutzer
                 await member.send({ content: `<@${member.id}>`, embeds: [dmEmbed] }).catch(console.error);
+
+                // Embed in Public Channel posten
+                const publicChannel = interaction.guild.channels.cache.get(config.abmeldungPublicChannelId);
+                if (publicChannel) await publicChannel.send({ content: `<@${member.id}>`, embeds: [dmEmbed] }).catch(console.error);
+
                 await interaction.update({ content: "✅ Abmeldung akzeptiert!", components: [], embeds: [] });
             }
 
             if (action === "reject") {
-                // Modal für Ablehnungsgrund
                 const modal = new ModalBuilder()
                     .setCustomId(`modal_abmeldung_reject_${member.id}_${zeitraum}`)
                     .setTitle("Abmeldung ablehnen");
