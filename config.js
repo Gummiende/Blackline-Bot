@@ -1,0 +1,35 @@
+module.exports = {
+    modRoleId: "1376953825088376843",
+
+    einstellungLogChannelId: "1486406107277819955",
+    kuendigungLogChannelId: "1486406237670080674",
+    rankLogChannelId: "1486406107277819955",
+    sanktionLogChannelId: "1486405963551608904",
+    defaultLogChannelId: "1487155479175106661",
+
+    abmeldungModerationChannelId: "1486410301812375625",
+    abmeldungPublicChannelId: "1486405878029750446",
+
+    einstellungRoles: [
+        "1485722228929728694",
+        "1376953825088376843",
+        "1485721831330549760",
+        "1376207536579022959"
+    ],
+
+    // Rollen, die immer behalten werden sollen
+    keepRolesAlways: [
+        "1485722559034032168",
+        "1376207540064489644"
+    ],
+
+    // Rollen, die behalten werden sollen, wenn man sie schon hat
+    keepRolesIfPresent: [
+        "1376953555164074104",
+        "1376207537849766009",
+        "1376207540479725619",
+        "1376953107606405190",
+        "1376953244097577081",
+        "1376953292688588870"
+    ]
+};
