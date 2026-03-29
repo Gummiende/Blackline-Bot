@@ -90,7 +90,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
         // SLASH COMMANDS
         // =====================
         if (interaction.isChatInputCommand()) {
-            // 🔹 PANEL
             if (interaction.commandName === "panel") {
                 const hasPermission = config.panelRoles.some((roleId) =>
                     interaction.member.roles.cache.has(roleId)
@@ -114,7 +113,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 });
             }
 
-            // 🔹 ABMELDEN
             if (interaction.commandName === "abmelden") {
                 const hasPermission = config.abmeldenRoles.some((roleId) =>
                     interaction.member.roles.cache.has(roleId)
@@ -149,7 +147,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 return interaction.reply({ content: "✅ Abmeldung eingereicht!", flags: 64 });
             }
 
-            // 🔹 CLEAR
             if (interaction.commandName === "clear") {
                 const hasPermission = config.clearRoles.some((roleId) =>
                     interaction.member.roles.cache.has(roleId)
@@ -162,7 +159,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 return interaction.reply({ content: `✅ ${amount} Nachrichten gelöscht!`, flags: 64 });
             }
 
-            // 🔹 KAMMER
             if (interaction.commandName === "kammer") {
                 const hasPermission = config.abmeldenRoles.some((roleId) =>
                     interaction.member.roles.cache.has(roleId)
@@ -190,6 +186,20 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 if(channel) await channel.send({ embeds: [embed] });
 
                 return interaction.reply({ content: "✅ Kammer-Eintrag erstellt!", flags: 64 });
+            }
+        }
+
+        // =====================
+        // 🔥 HIER IST DER FIX
+        // =====================
+        if (interaction.isStringSelectMenu()) {
+            if (interaction.customId === "aktion_auswahl") {
+                const value = interaction.values[0];
+
+                return interaction.reply({
+                    content: `✅ Du hast **${value}** ausgewählt!`,
+                    flags: 64
+                });
             }
         }
 
