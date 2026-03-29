@@ -7,7 +7,7 @@ module.exports = {
     sanktionLogChannelId: "1486405963551608904",
     defaultLogChannelId: "1487155479175106661",
 
-    abmeldungModerationChannelId: "1486410301812375625",
+    abmeldungModerationChannelId: "1487269383238713487",
     abmeldungPublicChannelId: "1486405878029750446",
 
     einstellungRoles: [
