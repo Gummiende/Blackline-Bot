@@ -122,7 +122,8 @@ client.on(Events.InteractionCreate, async interaction => {
                     .addFields(
                         { name: "Wer:", value: `<@${interaction.user.id}>`, inline: true },
                         { name: "Zeitraum:", value: zeitraum },
-                        { name: "Grund:", value: grund || "Kein Grund angegeben" }
+                        { name: "Grund:", value: grund || "Kein Grund angegeben" },
+                        { name: "📅 Datum:", value: `<t:${Math.floor(Date.now() / 1000)}:f>` }
                     )
                     .setTimestamp();
 
@@ -335,14 +336,15 @@ client.on(Events.InteractionCreate, async interaction => {
             }
 
             const abmeldungEmbed = new EmbedBuilder()
-                .setColor(action === "accept" ? "#660909" : "#660909")
+                .setColor(action === "accept" ? "#00FF00" : "#FF0000")
                 .setTitle(action === "accept" ? "Abmeldung akzeptiert" : "Abmeldung abgelehnt")
                 .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png")
                 .addFields(
                     { name: "Wer:", value: `<@${member.id}>`, inline: true },
                     { name: "Von:", value: `<@${interaction.user.id}>`, inline: true },
                     { name: "Zeitraum:", value: zeitraum },
-                    { name: "Grund:", value: grund || "Kein Grund angegeben" }
+                    { name: "Grund:", value: grund || "Kein Grund angegeben" },
+                    { name: "📅 Datum:", value: `<t:${Math.floor(Date.now() / 1000)}:f>` }
                 )
                 .setFooter({
                     text: `Blackline Bot • ausgeführt von ${interaction.user.username}`,
@@ -356,7 +358,7 @@ client.on(Events.InteractionCreate, async interaction => {
             if (action === "accept") {
                 const publicChannel = interaction.guild.channels.cache.get(config.abmeldungPublicChannelId);
                 await publicChannel.send({ content: `<@${member.id}>`, embeds: [abmeldungEmbed] });
-                await interaction.update({ content: "✅ Abmeldung akzeptiert!", components: [] });
+                await interaction.update({ content: "✅ Abmeldung akzeptiert und gepostet!", components: [] });
             } else if (action === "reject") {
                 await interaction.update({ content: "❌ Abmeldung abgelehnt!", components: [] });
             }
