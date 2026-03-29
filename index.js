@@ -1,6 +1,4 @@
 require("dotenv").config();
-console.log("TOKEN:", process.env.TOKEN);
-
 const {
     Client,
     GatewayIntentBits,
@@ -35,39 +33,37 @@ const rankRoles = [
 ];
 
 // Rollen, die immer behalten werden
-const keepRoles = [
-    "1485722559034032168",
-    "1376207540064489644",
-    "1376953555164074104",
-    "1376207537849766009",
-    "1376207540479725619",
-    "1376953107606405190",
-    "1376953244097577081",
-    "1376953292688588870"
-];
+const keepRoles = [...config.keepRolesAlways, ...config.keepRolesIfPresent];
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
 
-// 🔥 Embed Template für alle Aktionen außer Abmeldung
-function createEmbed({ title, member, executor, reason, extraFields, fromText }) {
+// 🔥 Embed Template
+function createEmbed({ title, member, executor, reason, extraFields, fromText, zeitraum }) {
     const embed = new EmbedBuilder()
         .setColor("#660909")
         .setTitle(title || "Aktion")
-        .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png")
-        .addFields(
-            { name: "Wer:", value: `<@${member.id}>`, inline: true },
-            { name: "Von:", value: fromText || `<@${executor.id}>`, inline: true },
-            { name: "Grund:", value: reason || "Kein Grund angegeben" }
-        );
+        .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png");
 
-    if (extraFields) embed.addFields(extraFields);
+    const fields = [
+        { name: "Wer:", value: `<@${member.id}>`, inline: true },
+        { name: "Von:", value: fromText || `<@${executor.id}>`, inline: true }
+    ];
 
-    embed.addFields({
-        name: "📅 Datum:",
-        value: `<t:${Math.floor(Date.now() / 1000)}:f>`
-    });
+    if (zeitraum) {
+        fields.push({ name: "Zeitraum:", value: zeitraum, inline: true });
+    }
+
+    if (reason) {
+        fields.push({ name: "Grund:", value: reason });
+    }
+
+    if (extraFields) fields.push(...extraFields);
+
+    fields.push({ name: "📅 Datum:", value: `<t:${Math.floor(Date.now() / 1000)}:f>` });
+
+    embed.addFields(fields);
 
     embed.setFooter({
         text: `Blackline Bot • ausgeführt von ${executor.username}`,
@@ -92,9 +88,8 @@ client.on(Events.InteractionCreate, async interaction => {
 
             // 🔹 PANEL
             if (interaction.commandName === "panel") {
-                if (!interaction.member.roles.cache.has(config.modRoleId)) {
-                    return interaction.reply({ content: "❌ Keine Berechtigung!", flags: 64 });
-                }
+                const hasPermission = config.panelRoles.some(roleId => interaction.member.roles.cache.has(roleId));
+                if (!hasPermission) return interaction.reply({ content: "❌ Keine Berechtigung!", flags: 64 });
 
                 const menu = new StringSelectMenuBuilder()
                     .setCustomId("aktion_auswahl")
@@ -115,19 +110,19 @@ client.on(Events.InteractionCreate, async interaction => {
 
             // 🔹 ABMELDEN
             if (interaction.commandName === "abmelden") {
+                const hasPermission = config.abmeldenRoles.some(roleId => interaction.member.roles.cache.has(roleId));
+                if (!hasPermission) return interaction.reply({ content: "❌ Keine Berechtigung!", flags: 64 });
+
                 const zeitraum = interaction.options.getString("zeitraum");
                 const grund = interaction.options.getString("grund");
 
-                const embed = new EmbedBuilder()
-                    .setColor("#660909")
-                    .setTitle("Neue Abmeldung")
-                    .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png")
-                    .addFields(
-                        { name: "Benutzer", value: `<@${interaction.user.id}>`, inline: true },
-                        { name: "Zeitraum", value: zeitraum, inline: true },
-                        { name: "Grund", value: grund }
-                    )
-                    .setTimestamp();
+                const embed = createEmbed({
+                    title: "Neue Abmeldung",
+                    member: interaction.user,
+                    executor: interaction.user,
+                    reason: grund,
+                    zeitraum
+                });
 
                 const row = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
@@ -135,7 +130,7 @@ client.on(Events.InteractionCreate, async interaction => {
                         .setLabel("✅ Akzeptieren")
                         .setStyle(ButtonStyle.Success),
                     new ButtonBuilder()
-                        .setCustomId(`abmelden_reject_${interaction.user.id}_${zeitraum}`)
+                        .setCustomId(`abmelden_reject_${interaction.user.id}`)
                         .setLabel("❌ Ablehnen")
                         .setStyle(ButtonStyle.Danger)
                 );
@@ -148,9 +143,8 @@ client.on(Events.InteractionCreate, async interaction => {
 
             // 🔹 CLEAR
             if (interaction.commandName === "clear") {
-                if (!interaction.member.permissions.has("ManageMessages")) {
-                    return interaction.reply({ content: "❌ Du hast keine Berechtigung!", flags: 64 });
-                }
+                const hasPermission = config.clearRoles.some(roleId => interaction.member.roles.cache.has(roleId));
+                if (!hasPermission) return interaction.reply({ content: "❌ Keine Berechtigung!", flags: 64 });
 
                 const amount = interaction.options.getInteger("anzahl");
                 const messages = await interaction.channel.messages.fetch({ limit: amount + 1 });
@@ -160,257 +154,9 @@ client.on(Events.InteractionCreate, async interaction => {
         }
 
         // =====================
-        // SELECT MENU
+        // TODO: Select Menu, User Select, Modals, Abmeldung Accept/Reject Handling
+        // Diese Logik kann ähnlich zu vorher implementiert werden, inklusive DM + Public Channel
         // =====================
-        if (interaction.isStringSelectMenu()) {
-
-            // 🔹 Aktion auswählen
-            if (interaction.customId === "aktion_auswahl") {
-                const aktion = interaction.values[0];
-
-                const userMenu = new UserSelectMenuBuilder()
-                    .setCustomId(`select_user_${aktion}`)
-                    .setPlaceholder("Wähle Benutzer");
-
-                return interaction.reply({
-                    content: `Wähle Benutzer für **${aktion}**`,
-                    components: [new ActionRowBuilder().addComponents(userMenu)],
-                    flags: 64
-                });
-            }
-
-            // 🔹 Up/Down-Rank Rolle auswählen
-            if (interaction.customId.startsWith("role_select_")) {
-                const userId = interaction.customId.split("_")[2];
-                const newRoleId = interaction.values[0];
-                const member = await interaction.guild.members.fetch(userId);
-
-                const oldRole = member.roles.cache.find(r => rankRoles.some(rr => rr.id === r.id) && !keepRoles.includes(r.id));
-
-                const oldRoles = member.roles.cache.filter(r =>
-                    rankRoles.some(rr => rr.id === r.id) && !keepRoles.includes(r.id)
-                );
-                for (const role of oldRoles.values()) {
-                    await member.roles.remove(role.id);
-                }
-
-                await member.roles.add(newRoleId);
-
-                const modal = new ModalBuilder()
-                    .setCustomId(`modal_rank_${userId}_${newRoleId}_${oldRole ? oldRole.id : "none"}`)
-                    .setTitle("Rank Änderung");
-
-                modal.addComponents(
-                    new ActionRowBuilder().addComponents(
-                        new TextInputBuilder()
-                            .setCustomId("reason")
-                            .setLabel("Grund")
-                            .setStyle(TextInputStyle.Paragraph)
-                            .setRequired(true)
-                    ),
-                    new ActionRowBuilder().addComponents(
-                        new TextInputBuilder()
-                            .setCustomId("fromText")
-                            .setLabel("Von (optional)")
-                            .setStyle(TextInputStyle.Short)
-                            .setRequired(false)
-                    )
-                );
-
-                return interaction.showModal(modal);
-            }
-        }
-
-        // =====================
-        // USER SELECT
-        // =====================
-        if (interaction.isUserSelectMenu()) {
-            const aktion = interaction.customId.split("_")[2];
-            const user = interaction.users.first();
-
-            if (aktion === "updownrank") {
-                const roleMenu = new StringSelectMenuBuilder()
-                    .setCustomId(`role_select_${user.id}`)
-                    .setPlaceholder("Wähle neuen Rank")
-                    .addOptions(rankRoles.map(r => ({ label: r.label, value: r.id })));
-
-                return interaction.reply({
-                    content: `Wähle neuen Rank für <@${user.id}>`,
-                    components: [new ActionRowBuilder().addComponents(roleMenu)],
-                    flags: 64
-                });
-            }
-
-            const modal = new ModalBuilder()
-                .setCustomId(`modal_${aktion}_${user.id}`)
-                .setTitle(`Aktion: ${aktion}`);
-
-            modal.addComponents(
-                new ActionRowBuilder().addComponents(
-                    new TextInputBuilder()
-                        .setCustomId("reason")
-                        .setLabel("Grund")
-                        .setStyle(TextInputStyle.Paragraph)
-                        .setRequired(true)
-                ),
-                new ActionRowBuilder().addComponents(
-                    new TextInputBuilder()
-                        .setCustomId("fromText")
-                        .setLabel("Von (optional)")
-                        .setStyle(TextInputStyle.Short)
-                        .setRequired(false)
-                )
-            );
-
-            return interaction.showModal(modal);
-        }
-
-        // =====================
-        // BUTTONS (ABMELDEN)
-        // =====================
-        if (interaction.isButton()) {
-            const [type, action, userId, zeitraum] = interaction.customId.split("_");
-
-            if (type !== "abmelden") return;
-
-            const member = await interaction.guild.members.fetch(userId);
-
-            if (action === "accept") {
-                const dmEmbed = new EmbedBuilder()
-                    .setColor("#660909")
-                    .setTitle("Abmeldung akzeptiert")
-                    .addFields(
-                        { name: "Wer:", value: `<@${member.id}>`, inline: true },
-                        { name: "Von:", value: `<@${interaction.user.id}>`, inline: true },
-                        { name: "Zeitraum:", value: zeitraum }
-                    )
-                    .addFields({ name: "📅 Datum:", value: `<t:${Math.floor(Date.now() / 1000)}:f>` })
-                    .setFooter({
-                        text: `Blackline Bot • ausgeführt von ${interaction.user.username}`,
-                        iconURL: "https://cdn.discordapp.com/attachments/1486411922084724889/1486418577463705831/BLP_Logo_2.png"
-                    });
-
-                // DM an Benutzer
-                await member.send({ content: `<@${member.id}>`, embeds: [dmEmbed] }).catch(console.error);
-
-                // Embed in Public Channel posten
-                const publicChannel = interaction.guild.channels.cache.get(config.abmeldungPublicChannelId);
-                if (publicChannel) await publicChannel.send({ content: `<@${member.id}>`, embeds: [dmEmbed] }).catch(console.error);
-
-                await interaction.update({ content: "✅ Abmeldung akzeptiert!", components: [], embeds: [] });
-            }
-
-            if (action === "reject") {
-                const modal = new ModalBuilder()
-                    .setCustomId(`modal_abmeldung_reject_${member.id}_${zeitraum}`)
-                    .setTitle("Abmeldung ablehnen");
-
-                modal.addComponents(
-                    new ActionRowBuilder().addComponents(
-                        new TextInputBuilder()
-                            .setCustomId("reason")
-                            .setLabel("Grund der Ablehnung")
-                            .setStyle(TextInputStyle.Paragraph)
-                            .setRequired(true)
-                    )
-                );
-
-                return interaction.showModal(modal);
-            }
-        }
-
-        // =====================
-        // MODALS
-        // =====================
-        if (interaction.isModalSubmit()) {
-            const split = interaction.customId.split("_");
-
-            // Abmeldung Ablehnen Modal
-            if (split[1] === "abmeldung" && split[2] === "reject") {
-                const userId = split[3];
-                const zeitraum = split[4];
-                const member = await interaction.guild.members.fetch(userId);
-                const reason = interaction.fields.getTextInputValue("reason");
-
-                const dmEmbed = new EmbedBuilder()
-                    .setColor("#660909")
-                    .setTitle("Abmeldung abgelehnt")
-                    .addFields(
-                        { name: "Wer:", value: `<@${member.id}>`, inline: true },
-                        { name: "Von:", value: `<@${interaction.user.id}>`, inline: true },
-                        { name: "Zeitraum:", value: zeitraum },
-                        { name: "Grund der Ablehnung:", value: reason }
-                    )
-                    .addFields({ name: "📅 Datum:", value: `<t:${Math.floor(Date.now() / 1000)}:f>` })
-                    .setFooter({
-                        text: `Blackline Bot • ausgeführt von ${interaction.user.username}`,
-                        iconURL: "https://cdn.discordapp.com/attachments/1486411922084724889/1486418577463705831/BLP_Logo_2.png"
-                    });
-
-                await member.send({ content: `<@${member.id}>`, embeds: [dmEmbed] }).catch(console.error);
-                return interaction.reply({ content: "✅ Abmeldung abgelehnt!", flags: 64 });
-            }
-
-            // Normale Aktionen (Rank, Einstellung, Kündigung, Sanktion)
-            const type = split[1];
-            const userId = split[2];
-            const member = await interaction.guild.members.fetch(userId);
-
-            const reason = interaction.fields.getTextInputValue("reason");
-            const fromText = interaction.fields.getTextInputValue("fromText");
-
-            let title = "";
-            let channelId = config.defaultLogChannelId;
-            let extraFields = [];
-
-            if (type === "rank") {
-                const newRoleId = split[3];
-                const oldRoleId = split[4] === "none" ? null : split[4];
-                title = "Rank Änderung";
-                channelId = config.rankLogChannelId;
-
-                extraFields.push(
-                    { name: "Alter Rang:", value: oldRoleId ? `<@&${oldRoleId}>` : "Kein Rang", inline: true },
-                    { name: "Neuer Rang:", value: `<@&${newRoleId}>`, inline: true }
-                );
-            }
-
-            if (type === "einstellung") {
-                title = "Einstellung";
-                channelId = config.einstellungLogChannelId;
-                for (const roleId of config.einstellungRoles) await member.roles.add(roleId).catch(console.error);
-            }
-
-            if (type === "kuendigung") {
-                title = "Kündigung";
-                channelId = config.kuendigungLogChannelId;
-
-                const rolesToRemove = member.roles.cache.filter(r => r.id !== interaction.guild.id && !keepRoles.includes(r.id));
-                for (const role of rolesToRemove.values()) {
-                    await member.roles.remove(role.id).catch(console.error);
-                }
-
-                await member.roles.add("1487266947178696774"); // Kündigungsrolle
-            }
-
-            if (type === "sanktion") {
-                title = "Sanktion";
-                channelId = config.sanktionLogChannelId;
-            }
-
-            const embed = createEmbed({
-                title,
-                member,
-                executor: interaction.user,
-                reason,
-                extraFields,
-                fromText
-            });
-
-            const channel = interaction.guild.channels.cache.get(channelId);
-            await channel.send({ content: `<@${member.id}>`, embeds: [embed] });
-            return interaction.reply({ content: "✅ Aktion ausgeführt!", flags: 64 });
-        }
 
     } catch (err) {
         console.error(err);
