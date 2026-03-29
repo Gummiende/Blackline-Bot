@@ -16,7 +16,6 @@ const {
 
 const config = require("./config");
 
-// 🔥 RANK ROLLEN
 const rankRoles = [
     { id: "1376207536579022959", label: "Praktikant/in │01│" },
     { id: "1376207535408681033", label: "Azubi │02│" },
@@ -32,7 +31,6 @@ const rankRoles = [
     { id: "1376207522347614320", label: "Inhaber/in │12│" },
 ];
 
-// Rollen, die immer behalten werden
 const keepRoles = [...config.keepRolesAlways, ...config.keepRolesIfPresent];
 
 const client = new Client({
@@ -53,15 +51,12 @@ function createEmbed({ title, member, executor, reason, extraFields, fromText, z
             "https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png"
         );
 
-    const fields = [
-        { name: "Wer:", value: `<@${member.id}>`, inline: true },
-        { name: "Von:", value: fromText || `<@${executor.id}>`, inline: true },
-    ];
-
-    if (zeitraum) fields.push({ name: "Zeitraum:", value: zeitraum, inline: true });
-    if (reason) fields.push({ name: "Grund:", value: reason });
-    if (extraFields) fields.push(...extraFields);
-
+    const fields = [];
+    if(member) fields.push({ name: "Wer:", value: `<@${member.id}>`, inline: true });
+    if(fromText) fields.push({ name: "Von:", value: fromText, inline: true });
+    if(zeitraum) fields.push({ name: "Zeitraum:", value: zeitraum, inline: true });
+    if(reason) fields.push({ name: "Grund:", value: reason });
+    if(extraFields) fields.push(...extraFields);
     fields.push({ name: "📅 Datum:", value: `<t:${Math.floor(Date.now() / 1000)}:f>` });
 
     embed.addFields(fields);
@@ -76,9 +71,7 @@ function createEmbed({ title, member, executor, reason, extraFields, fromText, z
 }
 
 // ✅ READY
-client.once("ready", () => {
-    console.log("✅ Blackline Bot online!");
-});
+client.once("ready", () => console.log("✅ Blackline Bot online!"));
 
 // 🔹 Neue Mitglieder Join-Rollen
 client.on("guildMemberAdd", async (member) => {
@@ -150,9 +143,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                         .setStyle(ButtonStyle.Danger)
                 );
 
-                const channel = interaction.guild.channels.cache.get(
-                    config.abmeldungModerationChannelId
-                );
+                const channel = interaction.guild.channels.cache.get(config.abmeldungModerationChannelId);
                 await channel.send({ content: `<@${interaction.user.id}>`, embeds: [embed], components: [row] });
 
                 return interaction.reply({ content: "✅ Abmeldung eingereicht!", flags: 64 });
@@ -170,17 +161,46 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 await interaction.channel.bulkDelete(messages, true);
                 return interaction.reply({ content: `✅ ${amount} Nachrichten gelöscht!`, flags: 64 });
             }
+
+            // 🔹 KAMMER
+            if (interaction.commandName === "kammer") {
+                const hasPermission = config.abmeldenRoles.some((roleId) =>
+                    interaction.member.roles.cache.has(roleId)
+                );
+                if (!hasPermission) return interaction.reply({ content: "❌ Keine Berechtigung!", flags: 64 });
+
+                const von = interaction.options.getString("von");
+                const item = interaction.options.getString("item");
+
+                const embed = new EmbedBuilder()
+                    .setColor("#660909")
+                    .setTitle("Kammer-Eintrag")
+                    .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png")
+                    .addFields(
+                        { name: "Item:", value: item },
+                        { name: "Von:", value: von },
+                        { name: "📅 Datum:", value: `<t:${Math.floor(Date.now() / 1000)}:f>` }
+                    )
+                    .setFooter({
+                        text: `Blackline Bot • ausgeführt von ${interaction.user.username}`,
+                        iconURL: "https://cdn.discordapp.com/attachments/1486411922084724889/1486418577463705831/BLP_Logo_2.png",
+                    });
+
+                const channel = interaction.guild.channels.cache.get(config.abmeldungPublicChannelId);
+                if(channel) await channel.send({ embeds: [embed] });
+
+                return interaction.reply({ content: "✅ Kammer-Eintrag erstellt!", flags: 64 });
+            }
         }
 
         // =====================
-        // SELECT MENU, USER SELECT, MODALS, BUTTONS (Abmeldung Accept/Reject)
+        // Buttons & Modals für Abmeldung
         // =====================
         if (interaction.isButton()) {
             const [action, , userId, zeitraum] = interaction.customId.split("_");
             const member = await interaction.guild.members.fetch(userId);
 
             if (action === "abmelden") {
-                // Accept
                 if (interaction.customId.startsWith("abmelden_accept_")) {
                     const embed = createEmbed({
                         title: "Abmeldung akzeptiert",
@@ -189,17 +209,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
                         zeitraum,
                     });
 
-                    // DM an User
                     await member.send({ content: `<@${member.id}>`, embeds: [embed] }).catch(console.error);
 
-                    // Public Channel
                     const publicChannel = interaction.guild.channels.cache.get(config.abmeldungPublicChannelId);
                     if (publicChannel) await publicChannel.send({ content: `<@${member.id}>`, embeds: [embed] });
 
                     return interaction.update({ content: "✅ Abmeldung akzeptiert!", components: [], embeds: [] });
                 }
 
-                // Reject: Modal für Grund
                 if (interaction.customId.startsWith("abmelden_reject_")) {
                     const modal = new ModalBuilder()
                         .setCustomId(`abmelden_reject_modal_${userId}_${zeitraum}`)
@@ -234,7 +251,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     zeitraum,
                 });
 
-                // DM an User
                 await member.send({ content: `<@${member.id}>`, embeds: [embed] }).catch(console.error);
 
                 return interaction.reply({ content: "✅ Abmeldung abgelehnt!", flags: 64 });
