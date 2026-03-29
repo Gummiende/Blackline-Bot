@@ -8,7 +8,6 @@ const {
     ModalBuilder,
     TextInputBuilder,
     TextInputStyle,
-    UserSelectMenuBuilder,
     EmbedBuilder,
     ButtonBuilder,
     ButtonStyle,
@@ -216,6 +215,38 @@ client.on(Events.InteractionCreate, async interaction => {
                 );
 
                 return interaction.showModal(modal);
+            }
+        }
+
+        // =====================
+        // SELECT MENUS (PANEL)
+        // =====================
+        if (interaction.isStringSelectMenu()) {
+            if (interaction.customId === "aktion_auswahl") {
+                const selected = interaction.values[0];
+
+                let reply = "";
+                switch (selected) {
+                    case "einstellung":
+                        reply = "⚙️ Du hast **Einstellung** gewählt!";
+                        break;
+                    case "kuendigung":
+                        reply = "📤 Du hast **Kündigung** gewählt!";
+                        break;
+                    case "updownrank":
+                        reply = "⬆️⬇️ Du hast **Up/Down Rank** gewählt!";
+                        break;
+                    case "sanktion":
+                        reply = "🚫 Du hast **Sanktion** gewählt!";
+                        break;
+                    default:
+                        reply = "❌ Unbekannte Auswahl!";
+                }
+
+                return interaction.reply({
+                    content: reply,
+                    flags: InteractionResponseFlags.Ephemeral
+                });
             }
         }
 
