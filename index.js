@@ -11,7 +11,8 @@ const {
     UserSelectMenuBuilder,
     EmbedBuilder,
     ButtonBuilder,
-    ButtonStyle
+    ButtonStyle,
+    PermissionsBitField
 } = require("discord.js");
 
 const config = require("./config");
@@ -33,19 +34,15 @@ const rankRoles = [
 ];
 
 // Rollen, die immer behalten werden
-const keepRoles = [
-    "1485722559034032168",
-    "1376207540064489644",
-    "1376953555164074104",
-    "1376207537849766009",
-    "1376207540479725619",
-    "1376953107606405190",
-    "1376953244097577081",
-    "1376953292688588870"
-];
+const keepRoles = [...config.keepRolesAlways, ...config.keepRolesIfPresent];
 
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ]
 });
 
 // 🔥 Embed Template
@@ -80,18 +77,20 @@ client.once("ready", () => {
     console.log("✅ Blackline Bot online!");
 });
 
+// =====================
+// INTERACTIONS
+// =====================
 client.on(Events.InteractionCreate, async interaction => {
     try {
-
-        // =====================
+        // -------------------
         // SLASH COMMANDS
-        // =====================
+        // -------------------
         if (interaction.isChatInputCommand()) {
 
             // 🔹 PANEL
             if (interaction.commandName === "panel") {
                 if (!interaction.member.roles.cache.has(config.modRoleId)) {
-                    return interaction.reply({ content: "❌ Keine Berechtigung!", flags: 64 });
+                    return interaction.reply({ content: "❌ Keine Berechtigung!", ephemeral: true });
                 }
 
                 const menu = new StringSelectMenuBuilder()
@@ -107,7 +106,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 return interaction.reply({
                     content: "📋 **Blackline Verwaltung**",
                     components: [new ActionRowBuilder().addComponents(menu)],
-                    flags: 64
+                    ephemeral: true
                 });
             }
 
@@ -141,31 +140,28 @@ client.on(Events.InteractionCreate, async interaction => {
                 const channel = interaction.guild.channels.cache.get(config.abmeldungModerationChannelId);
                 await channel.send({ content: `<@${interaction.user.id}>`, embeds: [embed], components: [row] });
 
-                return interaction.reply({ content: "✅ Abmeldung eingereicht!", flags: 64 });
+                return interaction.reply({ content: "✅ Abmeldung eingereicht!", ephemeral: true });
             }
 
             // 🔹 CLEAR
             if (interaction.commandName === "clear") {
-                if (!interaction.member.permissions.has("ManageMessages")) {
-                    return interaction.reply({ content: "❌ Du hast keine Berechtigung!", flags: 64 });
+                if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
+                    return interaction.reply({ content: "❌ Du hast keine Berechtigung!", ephemeral: true });
                 }
 
                 const amount = interaction.options.getInteger("anzahl");
                 const messages = await interaction.channel.messages.fetch({ limit: amount + 1 });
-                await interaction.channel.bulkDelete(messages, true);
-                return interaction.reply({ content: `✅ ${amount} Nachrichten gelöscht!`, flags: 64 });
+                await interaction.channel.bulkDelete(messages.filter(m => (Date.now() - m.createdTimestamp) < 14*24*60*60*1000), true);
+                return interaction.reply({ content: `✅ ${amount} Nachrichten gelöscht!`, ephemeral: true });
             }
         }
 
-        // =====================
+        // -------------------
         // SELECT MENU
-        // =====================
+        // -------------------
         if (interaction.isStringSelectMenu()) {
-
-            // 🔹 Aktion auswählen
             if (interaction.customId === "aktion_auswahl") {
                 const aktion = interaction.values[0];
-
                 const userMenu = new UserSelectMenuBuilder()
                     .setCustomId(`select_user_${aktion}`)
                     .setPlaceholder("Wähle Benutzer");
@@ -173,25 +169,22 @@ client.on(Events.InteractionCreate, async interaction => {
                 return interaction.reply({
                     content: `Wähle Benutzer für **${aktion}**`,
                     components: [new ActionRowBuilder().addComponents(userMenu)],
-                    flags: 64
+                    ephemeral: true
                 });
             }
 
-            // 🔹 Up/Down-Rank Rolle auswählen
             if (interaction.customId.startsWith("role_select_")) {
                 const userId = interaction.customId.split("_")[2];
                 const newRoleId = interaction.values[0];
                 const member = await interaction.guild.members.fetch(userId);
 
-                // Alte Rolle vor dem Entfernen speichern
-                const oldRole = member.roles.cache.find(r => rankRoles.some(rr => rr.id === r.id) && !keepRoles.includes(r.id));
-
                 // Alte Rollen entfernen
                 const oldRoles = member.roles.cache.filter(r =>
                     rankRoles.some(rr => rr.id === r.id) && !keepRoles.includes(r.id)
                 );
+                const oldRole = oldRoles.first();
                 for (const role of oldRoles.values()) {
-                    await member.roles.remove(role.id);
+                    await member.roles.remove(role.id).catch(console.error);
                 }
 
                 // Neue Rolle hinzufügen
@@ -223,9 +216,9 @@ client.on(Events.InteractionCreate, async interaction => {
             }
         }
 
-        // =====================
+        // -------------------
         // USER SELECT
-        // =====================
+        // -------------------
         if (interaction.isUserSelectMenu()) {
             const aktion = interaction.customId.split("_")[2];
             const user = interaction.users.first();
@@ -239,11 +232,10 @@ client.on(Events.InteractionCreate, async interaction => {
                 return interaction.reply({
                     content: `Wähle neuen Rank für <@${user.id}>`,
                     components: [new ActionRowBuilder().addComponents(roleMenu)],
-                    flags: 64
+                    ephemeral: true
                 });
             }
 
-            // Modal für andere Aktionen
             const modal = new ModalBuilder()
                 .setCustomId(`modal_${aktion}_${user.id}`)
                 .setTitle(`Aktion: ${aktion}`);
@@ -268,12 +260,12 @@ client.on(Events.InteractionCreate, async interaction => {
             return interaction.showModal(modal);
         }
 
-        // =====================
+        // -------------------
         // MODALS
-        // =====================
+        // -------------------
         if (interaction.isModalSubmit()) {
             const split = interaction.customId.split("_");
-            const type = split[1]; // rank, einstellung, kuendigung, sanktion
+            const type = split[1];
             const userId = split[2];
             const member = await interaction.guild.members.fetch(userId);
 
@@ -330,11 +322,30 @@ client.on(Events.InteractionCreate, async interaction => {
 
             const channel = interaction.guild.channels.cache.get(channelId);
             await channel.send({ content: `<@${member.id}>`, embeds: [embed] });
-            return interaction.reply({ content: "✅ Aktion ausgeführt!", flags: 64 });
+            return interaction.reply({ content: "✅ Aktion ausgeführt!", ephemeral: true });
+        }
+
+        // -------------------
+        // BUTTONS (ABMELDUNG)
+        // -------------------
+        if (interaction.isButton()) {
+            const [_, action, userId] = interaction.customId.split("_");
+
+            if (interaction.user.id !== userId) {
+                return interaction.reply({ content: "❌ Du darfst diesen Button nicht benutzen!", ephemeral: true });
+            }
+
+            const member = await interaction.guild.members.fetch(userId);
+
+            if (action === "accept") {
+                await interaction.update({ content: "✅ Abmeldung akzeptiert", components: [] });
+            } else if (action === "reject") {
+                await interaction.update({ content: "❌ Abmeldung abgelehnt", components: [] });
+            }
         }
 
     } catch (err) {
-        console.error(err);
+        console.error("Fehler bei Interaction:", err);
     }
 });
 
