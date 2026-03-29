@@ -120,19 +120,20 @@ client.on(Events.InteractionCreate, async interaction => {
                     .setTitle("Neue Abmeldung")
                     .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png")
                     .addFields(
-                        { name: "Benutzer", value: `<@${interaction.user.id}>`, inline: true },
-                        { name: "Zeitraum", value: zeitraum, inline: true },
-                        { name: "Grund", value: grund }
+                        { name: "Wer:", value: zeitraum, inline: true },
+                        { name: "Von:", value: zeitraum, inline: true },
+                        { name: "Zeitraum:", value: zeitraum },
+                        { name: "Grund:", value: grund || "Kein Grund angegeben" }
                     )
                     .setTimestamp();
 
                 const row = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
-                        .setCustomId(`abmelden_accept_${interaction.user.id}`)
+                        .setCustomId(`abmelden_accept_${interaction.user.id}_${zeitraum}_${grund}`)
                         .setLabel("✅ Akzeptieren")
                         .setStyle(ButtonStyle.Success),
                     new ButtonBuilder()
-                        .setCustomId(`abmelden_reject_${interaction.user.id}`)
+                        .setCustomId(`abmelden_reject_${interaction.user.id}_${zeitraum}_${grund}`)
                         .setLabel("❌ Ablehnen")
                         .setStyle(ButtonStyle.Danger)
                 );
@@ -329,18 +330,39 @@ client.on(Events.InteractionCreate, async interaction => {
         // BUTTONS (ABMELDUNG)
         // -------------------
         if (interaction.isButton()) {
-            const [_, action, userId] = interaction.customId.split("_");
-
-            if (interaction.user.id !== userId) {
-                return interaction.reply({ content: "❌ Du darfst diesen Button nicht benutzen!", ephemeral: true });
-            }
-
+            const [_, action, userId, zeitraum, ...grundParts] = interaction.customId.split("_");
+            const grund = grundParts.join("_");
             const member = await interaction.guild.members.fetch(userId);
 
+            if (!interaction.member.roles.cache.has(config.modRoleId)) {
+                return interaction.reply({ content: "❌ Keine Berechtigung!", ephemeral: true });
+            }
+
+            const abmeldungEmbed = new EmbedBuilder()
+                .setColor(action === "accept" ? "#00FF00" : "#FF0000")
+                .setTitle(action === "accept" ? "Abmeldung akzeptiert" : "Abmeldung abgelehnt")
+                .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png")
+                .addFields(
+                    { name: "Wer:", value: zeitraum, inline: true },
+                    { name: "Von:", value: zeitraum, inline: true },
+                    { name: "Zeitraum:", value: zeitraum },
+                    { name: "Grund:", value: grund || "Kein Grund angegeben" }
+                )
+                .setFooter({
+                    text: `Blackline Bot • ausgeführt von ${interaction.user.username}`,
+                    iconURL: "https://cdn.discordapp.com/attachments/1486411922084724889/1486418577463705831/BLP_Logo_2.png"
+                })
+                .setTimestamp();
+
+            // DM an Nutzer
+            await member.send({ embeds: [abmeldungEmbed] }).catch(() => {});
+
             if (action === "accept") {
-                await interaction.update({ content: "✅ Abmeldung akzeptiert", components: [] });
+                const publicChannel = interaction.guild.channels.cache.get(config.abmeldungPublicChannelId);
+                await publicChannel.send({ content: `<@${member.id}>`, embeds: [abmeldungEmbed] });
+                await interaction.update({ content: "✅ Abmeldung akzeptiert und gepostet!", components: [] });
             } else if (action === "reject") {
-                await interaction.update({ content: "❌ Abmeldung abgelehnt", components: [] });
+                await interaction.update({ content: "❌ Abmeldung abgelehnt!", components: [] });
             }
         }
 
