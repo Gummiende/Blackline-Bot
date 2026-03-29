@@ -77,6 +77,21 @@ client.once("ready", () => {
     console.log("✅ Blackline Bot online!");
 });
 
+// 🔹 Neue Mitglieder bekommen automatisch die joinRoles
+client.on("guildMemberAdd", async member => {
+    try {
+        if (!config.joinRoles || config.joinRoles.length === 0) return;
+
+        for (const roleId of config.joinRoles) {
+            await member.roles.add(roleId).catch(console.error);
+        }
+
+        console.log(`✅ ${member.user.tag} hat die Join-Rollen erhalten.`);
+    } catch (err) {
+        console.error("Fehler beim Zuweisen der Join-Rollen:", err);
+    }
+});
+
 // =====================
 // INTERACTIONS
 // =====================
