@@ -15,9 +15,16 @@ const {
     ButtonStyle,
     PermissionsBitField
 } = require("discord.js");
-
 const config = require("./config");
-// ...existing code...
+
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ]
+});
 // Rang-Anfrage Embed Command (z.B. beim Bot-Start einmalig ausführen oder als Admin-Command)
 client.once("ready", async () => {
     const channelId = config.rangAnfrageChannelId;
@@ -116,15 +123,6 @@ const rankRoles = [
 
 // Rollen, die immer behalten werden
 const keepRoles = [...config.keepRolesAlways, ...config.keepRolesIfPresent];
-
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
-});
 
 // 🔥 Embed Template
 function createEmbed({ title, member, executor, reason, extraFields, fromText }) {
