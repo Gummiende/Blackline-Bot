@@ -17,7 +17,11 @@ const commands = [
             option.setName("grund")
                 .setDescription("Grund")
                 .setRequired(true)
-        )
+        ),
+
+    new SlashCommandBuilder()
+        .setName("set-rang-anfrage")
+        .setDescription("Postet das Rang-Anfrage Panel (nur Führungsebene)")
 ].map(cmd => cmd.toJSON());
 
 const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
