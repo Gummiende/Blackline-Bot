@@ -62,7 +62,7 @@ client.once("clientReady", async () => {
         const ticketEmbed = new EmbedBuilder()
             .setColor("#660909")
             .setTitle("**Blackline Performance Support**")
-            .setDescription("<:BLP_Flagge:1487925256806207598> Drücke auf das Dropdown Menü um eine Kategorie auszuwählen :BLP_Flagge:");
+            .setDescription("<:BLP_Flagge:1487925256806207598> Drücke auf das Dropdown Menü um eine Kategorie auszuwählen <:BLP_Flagge:1487925256806207598>");
 
         const selectMenu = new StringSelectMenuBuilder()
             .setCustomId("ticket_select")
