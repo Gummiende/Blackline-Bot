@@ -344,7 +344,8 @@ client.on(Events.InteractionCreate, async interaction => {
                                 id: rid,
                                 allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory, PermissionsBitField.Flags.ManageChannels]
                             })))
-                        ]
+                        ],
+                        topic: JSON.stringify({ creatorId: interaction.user.id })
                     });
 
                     // Willkommensnachricht und Embed
@@ -452,11 +453,15 @@ client.on(Events.InteractionCreate, async interaction => {
                             await channel.permissionOverwrites.edit(interaction.user.id, { ViewChannel: false });
                             await interaction.reply({ content: "✅ Ticket geschlossen!", ephemeral: true });
                             // Speichere Grund/Schließenden ggf. in channel.topic oder DB für reopen/transcript
-                            channel.topic = JSON.stringify({
+                            // Ersteller-ID aus topic holen und mit speichern
+                            let meta = {};
+                            try { meta = JSON.parse(channel.topic); } catch {}
+                            channel.setTopic(JSON.stringify({
+                                creatorId: meta.creatorId,
                                 closedBy: interaction.user.id,
                                 closeReason: reason,
                                 ticketType: ticketType
-                            });
+                            })).catch(() => {});
                             return;
                         }
 
@@ -507,8 +512,8 @@ client.on(Events.InteractionCreate, async interaction => {
                             // Ersteller aus topic holen
                             let meta = {};
                             try { meta = JSON.parse(channel.topic); } catch {}
-                            if (meta.closedBy) {
-                                await channel.permissionOverwrites.edit(meta.closedBy, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true });
+                            if (meta.creatorId) {
+                                await channel.permissionOverwrites.edit(meta.creatorId, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true });
                             }
                             // Channel wieder in Ursprungs-Kategorie verschieben
                             const ticketConfig = config.ticketSystem[ticketType] || {};
