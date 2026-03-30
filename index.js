@@ -1,30 +1,3 @@
-// Lösche Rang-Anfrage-Nachricht, wenn Führungsebene mit :BLP_Flagge: reagiert
-client.on(Events.MessageReactionAdd, async (reaction, user) => {
-    try {
-        // Stelle sicher, dass alle Daten geladen sind
-        if (reaction.partial) await reaction.fetch();
-        if (reaction.message.partial) await reaction.message.fetch();
-        if (user.bot) return;
-
-        // Emoji prüfen (Name oder ID)
-        if (reaction.emoji.name !== "BLP_Flagge") return;
-
-        // Prüfe, ob Nachricht ein Rang-Anfrage Embed ist
-        const embed = reaction.message.embeds?.[0];
-        if (!embed || embed.title !== "Neue Rang-Anfrage") return;
-
-        // Prüfe, ob User Führungsebene ist
-        const member = await reaction.message.guild.members.fetch(user.id).catch(() => null);
-        if (!member || !member.roles.cache.has(config.fuehrungsebeneRoleId)) return;
-
-        // Nachricht löschen
-        await reaction.message.delete().catch(() => {});
-    } catch (err) {
-        console.error("Fehler beim Löschen der Rang-Anfrage-Nachricht:", err);
-    }
-});
-
-// ...existing code...
 
 require("dotenv").config();
 const {
