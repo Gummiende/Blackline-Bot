@@ -28,6 +28,7 @@ const client = new Client({
 // Rang-Anfrage Embed Command (z.B. beim Bot-Start einmalig ausführen oder als Admin-Command)
 client.once("ready", async () => {
     const channelId = config.rangAnfrageChannelId;
+    const fuehrungsebeneRoleId = config.fuehrungsebeneRoleId;
     const channel = await client.channels.fetch(channelId).catch(() => null);
     if (!channel) return;
     // Sende Embed mit Button
