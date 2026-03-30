@@ -62,7 +62,7 @@ client.once("clientReady", async () => {
         const ticketEmbed = new EmbedBuilder()
             .setColor("#660909")
             .setTitle("**Blackline Performance Support**")
-            .setDescription(":BLP_Flagge: Drücke auf das Dropdown Menü um eine Kategorie auszuwählen :BLP_Flagge:");
+            .setDescription("<:BLP_Flagge:1487925256806207598> Drücke auf das Dropdown Menü um eine Kategorie auszuwählen :BLP_Flagge:");
 
         const selectMenu = new StringSelectMenuBuilder()
             .setCustomId("ticket_select")
@@ -355,7 +355,7 @@ client.on(Events.InteractionCreate, async interaction => {
                         .setColor("#660909")
                         .setTitle("Support Ticket Verwaltung")
                         .setDescription(
-                            'Um das Ticket zu schließen, drücken sie auf "🔒 Schließen"\n\n:w_arrow: Bitte beachten sie das vorgegebene Format falls vorhanden.'
+                            'Um das Ticket zu schließen, drücken sie auf "🔒 Schließen"\n\n<:BLP_Flagge:1487925256806207598> Bitte beachten sie das vorgegebene Format falls vorhanden.'
                         );
                     const closeButton = new ButtonBuilder()
                         .setCustomId("ticket_close")
