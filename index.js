@@ -54,46 +54,6 @@ client.once("clientReady", async () => {
         embeds: [embed],
         components: [row]
     });
-
-    // Ticket-Panel automatisch senden
-    const ticketPanelChannelId = "1376197567137972284";
-    const ticketPanelChannel = await client.channels.fetch(ticketPanelChannelId).catch(() => null);
-    if (ticketPanelChannel) {
-        const ticketEmbed = new EmbedBuilder()
-            .setColor("#660909")
-            .setTitle("**Blackline Performance Support**")
-            .setDescription("<:BLP_Flagge:1487925256806207598> Drücke auf das Dropdown Menü um eine Kategorie auszuwählen <:BLP_Flagge:1487925256806207598>");
-
-        const selectMenu = new StringSelectMenuBuilder()
-            .setCustomId("ticket_select")
-            .setPlaceholder("Kategorie auswählen...")
-            .addOptions([
-                {
-                    label: "Bewerbung",
-                    value: "bewerbung",
-                    description: "Hier kannst du dich als Mechaniker bewerben",
-                    emoji: "📋"
-                },
-                {
-                    label: "Leitungsebene",
-                    value: "leitungsebene",
-                    description: "Hier kommst du ins Gespräch mit der Leitungsebene",
-                    emoji: "🧪"
-                },
-                {
-                    label: "Führungsebene",
-                    value: "fuehrungsebene",
-                    description: "Hier kommst du ins Gespräch mit der Führungsebene",
-                    emoji: "👑"
-                }
-            ]);
-
-        const ticketRow = new ActionRowBuilder().addComponents(selectMenu);
-        await ticketPanelChannel.send({
-            embeds: [ticketEmbed],
-            components: [ticketRow]
-        });
-    }
 });
 
 
@@ -344,8 +304,7 @@ client.on(Events.InteractionCreate, async interaction => {
                                 id: rid,
                                 allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory, PermissionsBitField.Flags.ManageChannels]
                             })))
-                        ],
-                        topic: JSON.stringify({ creatorId: interaction.user.id })
+                        ]
                     });
 
                     // Willkommensnachricht und Embed
@@ -356,7 +315,7 @@ client.on(Events.InteractionCreate, async interaction => {
                         .setColor("#660909")
                         .setTitle("Support Ticket Verwaltung")
                         .setDescription(
-                            'Um das Ticket zu schließen, drücken sie auf "🔒 Schließen"\n\n<:BLP_Flagge:1487925256806207598> Bitte beachten sie das vorgegebene Format falls vorhanden.'
+                            'Um das Ticket zu schließen, drücken sie auf "🔒 Schließen"\n\n:w_arrow: Bitte beachten sie das vorgegebene Format falls vorhanden.'
                         );
                     const closeButton = new ButtonBuilder()
                         .setCustomId("ticket_close")
@@ -453,15 +412,11 @@ client.on(Events.InteractionCreate, async interaction => {
                             await channel.permissionOverwrites.edit(interaction.user.id, { ViewChannel: false });
                             await interaction.reply({ content: "✅ Ticket geschlossen!", ephemeral: true });
                             // Speichere Grund/Schließenden ggf. in channel.topic oder DB für reopen/transcript
-                            // Ersteller-ID aus topic holen und mit speichern
-                            let meta = {};
-                            try { meta = JSON.parse(channel.topic); } catch {}
-                            channel.setTopic(JSON.stringify({
-                                creatorId: meta.creatorId,
+                            channel.topic = JSON.stringify({
                                 closedBy: interaction.user.id,
                                 closeReason: reason,
                                 ticketType: ticketType
-                            })).catch(() => {});
+                            });
                             return;
                         }
 
@@ -512,8 +467,8 @@ client.on(Events.InteractionCreate, async interaction => {
                             // Ersteller aus topic holen
                             let meta = {};
                             try { meta = JSON.parse(channel.topic); } catch {}
-                            if (meta.creatorId) {
-                                await channel.permissionOverwrites.edit(meta.creatorId, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true });
+                            if (meta.closedBy) {
+                                await channel.permissionOverwrites.edit(meta.closedBy, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true });
                             }
                             // Channel wieder in Ursprungs-Kategorie verschieben
                             const ticketConfig = config.ticketSystem[ticketType] || {};
