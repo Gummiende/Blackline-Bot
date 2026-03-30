@@ -46,7 +46,7 @@ module.exports = {
     joinRoles: [
         "1485722559034032168", // Rolle 1
         "1376207540064489644"  // Rolle 2
-    ]
+    ],
 
     // Channel- und Rollen-IDs für Willkommensnachricht
     hausordnungChannelId: "1376195863138795610", // z.B. 123456789012345678
