@@ -77,21 +77,6 @@ client.once("ready", () => {
     console.log("✅ Blackline Bot online!");
 });
 
-// 🔹 Neue Mitglieder bekommen automatisch die joinRoles
-client.on("guildMemberAdd", async member => {
-    try {
-        if (!config.joinRoles || config.joinRoles.length === 0) return;
-
-        for (const roleId of config.joinRoles) {
-            await member.roles.add(roleId).catch(console.error);
-        }
-
-        console.log(`✅ ${member.user.tag} hat die Join-Rollen erhalten.`);
-    } catch (err) {
-        console.error("Fehler beim Zuweisen der Join-Rollen:", err);
-    }
-});
-
 // =====================
 // INTERACTIONS
 // =====================
@@ -385,3 +370,43 @@ client.on(Events.InteractionCreate, async interaction => {
 });
 
 client.login(process.env.TOKEN);
+// Willkommensnachricht bei neuem Mitglied
+client.on(Events.GuildMemberAdd, async member => {
+    const config = require("./config");
+    // IDs aus config.js (bitte dort eintragen)
+    const hausordnungChannelId = config.hausordnungChannelId;
+    const ticketChannelId = config.ticketChannelId;
+    const newsChannelId = config.newsChannelId;
+    const willkommenRoleId = config.willkommenRoleId;
+
+    // Embed-Nachricht
+    const welcomeEmbed = new EmbedBuilder()
+        .setColor("#660909")
+        .setTitle("🎉 **Herzlich Willkommen bei Blackline Performance!** 🎉")
+        .setDescription(
+            "Schön, dass du hier bist! 🙌\n\n" +
+            `Bevor du loslegst, nimm dir bitte kurz Zeit für unsere **📜 Hausordnung-Channel** (<#${hausordnungChannelId}>). So sorgen wir gemeinsam für eine entspannte und respektvolle Community.\n\n` +
+            "❗ **Wichtig für dich:**\n" +
+            `• Bei Fragen oder Problemen kannst du jederzeit ein Ticket im **🎫 Ticket-Channel** (<#${ticketChannelId}>) erstellen – unser Team hilft dir schnell weiter!\n` +
+            `• Verpasse keine News, Aktionen oder **Rabatte** 💸 – behalte unbedingt den **📢 Ankündigungs-Channel** (<#${newsChannelId}>) im Auge!\n` +
+            "• Bleib freundlich und respektvoll – wir wollen, dass sich hier jeder wohlfühlt 🤝\n\n" +
+            "Mit freundlichen Grüßen,\n" +
+            `<@&${willkommenRoleId}>`
+        )
+        .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png")
+        .setFooter({
+            text: "Blackline Bot • Willkommen",
+            iconURL: "https://cdn.discordapp.com/attachments/1486411922084724889/1486418577463705831/BLP_Logo_2.png"
+        })
+        .setTimestamp();
+
+    // Channel für Willkommensnachricht (z.B. der gleiche wie Hausordnung oder ein dedizierter Channel)
+    const welcomeChannelId = config.welcomeChannelId || hausordnungChannelId;
+    const channel = member.guild.channels.cache.get(welcomeChannelId);
+    if (channel) {
+        await channel.send({
+            content: `<@${member.id}>`,
+            embeds: [welcomeEmbed]
+        });
+    }
+});
