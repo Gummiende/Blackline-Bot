@@ -1,3 +1,82 @@
+// Rang-Anfrage Embed Command (z.B. beim Bot-Start einmalig ausführen oder als Admin-Command)
+client.once("ready", async () => {
+    const channelId = config.rangAnfrageChannelId;
+    const fuehrungsebeneRoleId = config.fuehrungsebeneRoleId;
+    const channel = await client.channels.fetch(channelId).catch(() => null);
+    if (!channel) return;
+    // Sende Embed mit Button
+    const embed = new EmbedBuilder()
+        .setColor("#660909")
+        .setTitle("<:BLP_Flagge:1487925256806207598> Vorlage")
+        .setDescription(
+            "Bitte haltet folgende Vorlage für die Rang Anfrage ein:\n\n" +
+            "> Name: @username | ggf. Dienstnummer & IC Name\n" +
+            "> Rang: Rang Name (**nicht pingen**)\n" +
+            "> Grund: Grund der Rang Anfrage\n\n" +
+            "-# Blackline Performance Rollen werden in der Regel automatisch von unserem Self-Made Bot synchronisiert, können bei Fehlern des Bots trotzdem angefragt werden."
+        );
+
+    const button = new ButtonBuilder()
+        .setCustomId("rang_anfrage_modal")
+        .setLabel("Rang-anfrage")
+        .setStyle(ButtonStyle.Success);
+
+    const row = new ActionRowBuilder().addComponents(button);
+
+    await channel.send({
+        content: `<@&${fuehrungsebeneRoleId}>`,
+        embeds: [embed],
+        components: [row]
+    });
+});
+
+// Button-Handler für Rang-Anfrage
+client.on(Events.InteractionCreate, async interaction => {
+    if (!interaction.isButton()) return;
+    if (interaction.customId !== "rang_anfrage_modal") return;
+
+    const modal = new ModalBuilder()
+        .setCustomId("rang_anfrage_modal_submit")
+        .setTitle("Rang-Anfrage stellen");
+
+    modal.addComponents(
+        new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+                .setCustomId("name")
+                .setLabel("Name (Discord/IC)")
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true)
+        ),
+        new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+                .setCustomId("rang")
+                .setLabel("Rang")
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true)
+        ),
+        new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+                .setCustomId("grund")
+                .setLabel("Grund")
+                .setStyle(TextInputStyle.Paragraph)
+                .setRequired(true)
+        )
+    );
+    await interaction.showModal(modal);
+});
+
+// Modal-Handler für Rang-Anfrage (hier kannst du die Anfrage weiterverarbeiten)
+client.on(Events.InteractionCreate, async interaction => {
+    if (!interaction.isModalSubmit()) return;
+    if (interaction.customId !== "rang_anfrage_modal_submit") return;
+
+    const name = interaction.fields.getTextInputValue("name");
+    const rang = interaction.fields.getTextInputValue("rang");
+    const grund = interaction.fields.getTextInputValue("grund");
+
+    // Hier kannst du die Anfrage z.B. in einen Log-Channel posten oder weiterverarbeiten
+    await interaction.reply({ content: `✅ Deine Rang-Anfrage wurde eingereicht!\n\n**Name:** ${name}\n**Rang:** ${rang}\n**Grund:** ${grund}`, ephemeral: true });
+});
 require("dotenv").config();
 const {
     Client,
