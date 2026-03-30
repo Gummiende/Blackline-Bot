@@ -481,16 +481,23 @@ client.on(Events.GuildMemberAdd, async member => {
     const newsChannelId = config.newsChannelId;
     const willkommenRoleId = config.willkommenRoleId;
 
+    // joinRoles automatisch vergeben
+    if (config.joinRoles && Array.isArray(config.joinRoles)) {
+        for (const roleId of config.joinRoles) {
+            await member.roles.add(roleId).catch(() => {});
+        }
+    }
+
     // Embed-Nachricht
     const welcomeEmbed = new EmbedBuilder()
         .setColor("#660909")
         .setTitle("🎉 **Herzlich Willkommen bei Blackline Performance!** 🎉")
         .setDescription(
             "Schön, dass du hier bist! 🙌\n\n" +
-            `Bevor du loslegst, nimm dir bitte kurz Zeit für unsere (<#${hausordnungChannelId}>). So sorgen wir gemeinsam für eine entspannte und respektvolle Community.\n\n` +
+            `Bevor du loslegst, nimm dir bitte kurz Zeit für unsere **📜 Hausordnung-Channel** (<#${hausordnungChannelId}>). So sorgen wir gemeinsam für eine entspannte und respektvolle Community.\n\n` +
             "❗ **Wichtig für dich:**\n" +
-            `• Bei Fragen oder Problemen kannst du jederzeit ein Ticket im (<#${ticketChannelId}>) erstellen – unser Team hilft dir schnell weiter!\n` +
-            `• Verpasse keine News, Aktionen oder **Rabatte** 💸 – behalte unbedingt den (<#${newsChannelId}>) im Auge!\n` +
+            `• Bei Fragen oder Problemen kannst du jederzeit ein Ticket im **🎫 Ticket-Channel** (<#${ticketChannelId}>) erstellen – unser Team hilft dir schnell weiter!\n` +
+            `• Verpasse keine News, Aktionen oder **Rabatte** 💸 – behalte unbedingt den **📢 Ankündigungs-Channel** (<#${newsChannelId}>) im Auge!\n` +
             "• Bleib freundlich und respektvoll – wir wollen, dass sich hier jeder wohlfühlt 🤝\n\n" +
             "Mit freundlichen Grüßen,\n" +
             `<@&${willkommenRoleId}>`
