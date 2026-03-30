@@ -37,8 +37,8 @@ client.once("ready", async () => {
         .setTitle("<:BLP_Flagge:1487925256806207598> Vorlage")
         .setDescription(
             "Bitte haltet folgende Vorlage für die Rang Anfrage ein:\n\n" +
-            "> Name: @username | ggf. Dienstnummer & IC Name\n" +
-            "> Rang: Rang Name (**nicht pingen**)\n" +
+            "> Name: Name | ggf. Dienstnummer & IC Name\n" +
+            "> Rang: Rang Name (nicht pingen)\n" +
             "> Grund: Grund der Rang Anfrage\n\n" +
             "-# Blackline Performance Rollen werden in der Regel automatisch von unserem Self-Made Bot synchronisiert, können bei Fehlern des Bots trotzdem angefragt werden."
         );
@@ -100,9 +100,33 @@ client.on(Events.InteractionCreate, async interaction => {
     const name = interaction.fields.getTextInputValue("name");
     const rang = interaction.fields.getTextInputValue("rang");
     const grund = interaction.fields.getTextInputValue("grund");
+    const fuehrungsebeneRoleId = config.fuehrungsebeneRoleId;
+    const channelId = config.rangAnfrageChannelId;
+    const channel = await interaction.guild.channels.fetch(channelId).catch(() => null);
 
-    // Hier kannst du die Anfrage z.B. in einen Log-Channel posten oder weiterverarbeiten
-    await interaction.reply({ content: `✅ Deine Rang-Anfrage wurde eingereicht!\n\n**Name:** ${name}\n**Rang:** ${rang}\n**Grund:** ${grund}`, ephemeral: true });
+    // Embed für die eingereichte Anfrage
+    const requestEmbed = new EmbedBuilder()
+        .setColor("#660909")
+        .setTitle("Neue Rang-Anfrage")
+        .addFields(
+            { name: "Name", value: `${name} (<@${interaction.user.id}>)`, inline: false },
+            { name: "Rang", value: rang, inline: false },
+            { name: "Grund", value: grund, inline: false }
+        )
+        .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png")
+        .setFooter({
+            text: "Blackline Bot • Rang-Anfrage",
+            iconURL: "https://cdn.discordapp.com/attachments/1486411922084724889/1486418577463705831/BLP_Logo_2.png"
+        })
+        .setTimestamp();
+
+    if (channel) {
+        await channel.send({
+            content: `<@&${fuehrungsebeneRoleId}>`,
+            embeds: [requestEmbed]
+        });
+    }
+    await interaction.reply({ content: `✅ Deine Rang-Anfrage wurde eingereicht!`, ephemeral: true });
 });
 
 // 🔥 RANK ROLLEN
