@@ -51,7 +51,6 @@ client.once("ready", async () => {
     const row = new ActionRowBuilder().addComponents(button);
 
     await channel.send({
-        content: `<@&${fuehrungsebeneRoleId}>`,
         embeds: [embed],
         components: [row]
     });
