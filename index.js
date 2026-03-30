@@ -56,77 +56,8 @@ client.once("clientReady", async () => {
     });
 });
 
-// Button-Handler für Rang-Anfrage
-client.on(Events.InteractionCreate, async interaction => {
-    if (!interaction.isButton()) return;
-    if (interaction.customId !== "rang_anfrage_modal") return;
 
-    const modal = new ModalBuilder()
-        .setCustomId("rang_anfrage_modal_submit")
-        .setTitle("Rang-Anfrage stellen");
-
-    modal.addComponents(
-        new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-                .setCustomId("name")
-                .setLabel("Name (Discord/IC)")
-                .setStyle(TextInputStyle.Short)
-                .setRequired(true)
-        ),
-        new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-                .setCustomId("rang")
-                .setLabel("Rang")
-                .setStyle(TextInputStyle.Short)
-                .setRequired(true)
-        ),
-        new ActionRowBuilder().addComponents(
-            new TextInputBuilder()
-                .setCustomId("grund")
-                .setLabel("Grund")
-                .setStyle(TextInputStyle.Paragraph)
-                .setRequired(true)
-        )
-    );
-    await interaction.showModal(modal);
-});
-
-// Modal-Handler für Rang-Anfrage (hier kannst du die Anfrage weiterverarbeiten)
-client.on(Events.InteractionCreate, async interaction => {
-    if (!interaction.isModalSubmit()) return;
-    if (interaction.customId !== "rang_anfrage_modal_submit") return;
-
-    const name = interaction.fields.getTextInputValue("name");
-    const rang = interaction.fields.getTextInputValue("rang");
-    const grund = interaction.fields.getTextInputValue("grund");
-    const fuehrungsebeneRoleId = config.fuehrungsebeneRoleId;
-    const channelId = config.rangAnfrageChannelId;
-    const channel = await interaction.guild.channels.fetch(channelId).catch(() => null);
-
-    // Embed für die eingereichte Anfrage
-    const requestEmbed = new EmbedBuilder()
-        .setColor("#660909")
-        .setTitle("Neue Rang-Anfrage")
-        .addFields(
-            { name: "Name", value: `${name} (<@${interaction.user.id}>)`, inline: false },
-            { name: "Rang", value: rang, inline: false },
-            { name: "Grund", value: grund, inline: false }
-        )
-        .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png")
-        .setFooter({
-            text: "Blackline Bot • Rang-Anfrage",
-            iconURL: "https://cdn.discordapp.com/attachments/1486411922084724889/1486418577463705831/BLP_Logo_2.png"
-        })
-        .setTimestamp();
-
-    if (channel) {
-        await channel.send({
-            content: `<@&${fuehrungsebeneRoleId}>`,
-            embeds: [requestEmbed]
-        });
-    }
-    await interaction.reply({ content: `✅ Deine Rang-Anfrage wurde eingereicht!`, ephemeral: true });
-});
+// Button-Handler für Rang-Anfrage ist jetzt im großen InteractionCreate-Handler integriert
 
 // 🔥 RANK ROLLEN
 const rankRoles = [
@@ -184,6 +115,80 @@ client.once("clientReady", () => {
 // =====================
 client.on(Events.InteractionCreate, async interaction => {
     try {
+        // -------------------
+        // BUTTON: Rang-Anfrage öffnen
+        // -------------------
+        if (interaction.isButton() && interaction.customId === "rang_anfrage_modal") {
+            // Modal für Rang-Anfrage anzeigen
+            const modal = new ModalBuilder()
+                .setCustomId("rang_anfrage_modal_submit")
+                .setTitle("Rang-Anfrage stellen");
+
+            modal.addComponents(
+                new ActionRowBuilder().addComponents(
+                    new TextInputBuilder()
+                        .setCustomId("name")
+                        .setLabel("Name (Discord/IC)")
+                        .setStyle(TextInputStyle.Short)
+                        .setRequired(true)
+                ),
+                new ActionRowBuilder().addComponents(
+                    new TextInputBuilder()
+                        .setCustomId("rang")
+                        .setLabel("Rang")
+                        .setStyle(TextInputStyle.Short)
+                        .setRequired(true)
+                ),
+                new ActionRowBuilder().addComponents(
+                    new TextInputBuilder()
+                        .setCustomId("grund")
+                        .setLabel("Grund")
+                        .setStyle(TextInputStyle.Paragraph)
+                        .setRequired(true)
+                )
+            );
+            await interaction.showModal(modal);
+            return; // WICHTIG: Nur einmal antworten!
+        }
+
+        // -------------------
+        // MODAL: Rang-Anfrage abschicken
+        // -------------------
+        if (interaction.isModalSubmit() && interaction.customId === "rang_anfrage_modal_submit") {
+            // Werte aus dem Modal holen
+            const name = interaction.fields.getTextInputValue("name");
+            const rang = interaction.fields.getTextInputValue("rang");
+            const grund = interaction.fields.getTextInputValue("grund");
+            const fuehrungsebeneRoleId = config.fuehrungsebeneRoleId;
+            const channelId = config.rangAnfrageChannelId;
+            const channel = await interaction.guild.channels.fetch(channelId).catch(() => null);
+
+            // Embed für die eingereichte Anfrage
+            const requestEmbed = new EmbedBuilder()
+                .setColor("#660909")
+                .setTitle("Neue Rang-Anfrage")
+                .addFields(
+                    { name: "Name", value: `${name} (<@${interaction.user.id}>)`, inline: false },
+                    { name: "Rang", value: rang, inline: false },
+                    { name: "Grund", value: grund, inline: false }
+                )
+                .setThumbnail("https://cdn.discordapp.com/attachments/1486411922084724889/1486418576805072916/BLP_Flagge.png")
+                .setFooter({
+                    text: "Blackline Bot • Rang-Anfrage",
+                    iconURL: "https://cdn.discordapp.com/attachments/1486411922084724889/1486418577463705831/BLP_Logo_2.png"
+                })
+                .setTimestamp();
+
+            if (channel) {
+                await channel.send({
+                    content: `<@&${fuehrungsebeneRoleId}>`,
+                    embeds: [requestEmbed]
+                });
+            }
+            await interaction.reply({ content: `✅ Deine Rang-Anfrage wurde eingereicht!`, ephemeral: true });
+            return; // WICHTIG: Nur einmal antworten!
+        }
+
         // -------------------
         // SLASH COMMANDS
         // -------------------
