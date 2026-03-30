@@ -47,4 +47,11 @@ module.exports = {
         "1485722559034032168", // Rolle 1
         "1376207540064489644"  // Rolle 2
     ]
+
+    // Channel- und Rollen-IDs für Willkommensnachricht
+    hausordnungChannelId: "<1376195863138795610>", // z.B. 123456789012345678
+    ticketChannelId: "<1376197567137972284>", // z.B. 123456789012345678
+    newsChannelId: "<1487118524181647461>", // z.B. 123456789012345678
+    willkommenRoleId: "<1376953825088376843>", // z.B. 123456789012345678
+    welcomeChannelId: "<1376195584116916266>" // Optional: Channel für Willkommensnachricht
 };
