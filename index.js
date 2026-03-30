@@ -25,13 +25,17 @@ const client = new Client({
         GatewayIntentBits.MessageContent
     ]
 });
-// Rang-Anfrage Embed Command (z.B. beim Bot-Start einmalig ausführen oder als Admin-Command)
-client.once("ready", async () => {
-    const channelId = config.rangAnfrageChannelId;
-    const fuehrungsebeneRoleId = config.fuehrungsebeneRoleId;
-    const channel = await client.channels.fetch(channelId).catch(() => null);
-    if (!channel) return;
-    // Sende Embed mit Button
+
+// Slash-Command Handler für /set-rang-anfrage (nur Führungsebene)
+client.on(Events.InteractionCreate, async interaction => {
+    if (!interaction.isChatInputCommand()) return;
+    if (interaction.commandName !== "set-rang-anfrage") return;
+
+    // Nur Führungsebene darf das Panel setzen
+    if (!interaction.member.roles.cache.has(config.fuehrungsebeneRoleId)) {
+        return interaction.reply({ content: "❌ Du hast keine Berechtigung für diesen Befehl!", ephemeral: true });
+    }
+
     const embed = new EmbedBuilder()
         .setColor("#660909")
         .setTitle("<:BLP_Flagge:1487925256806207598> Vorlage")
@@ -50,10 +54,11 @@ client.once("ready", async () => {
 
     const row = new ActionRowBuilder().addComponents(button);
 
-    await channel.send({
+    await interaction.channel.send({
         embeds: [embed],
         components: [row]
     });
+    await interaction.reply({ content: "✅ Das Rang-Anfrage Panel wurde gesendet!", ephemeral: true });
 });
 
 // Button-Handler für Rang-Anfrage
