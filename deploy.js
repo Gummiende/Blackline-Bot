@@ -20,7 +20,7 @@ const commands = [
         ),
 
     new SlashCommandBuilder()
-        .setName("set-rang-anfrage")
+        .setName("SetRang")
         .setDescription("Postet das Rang-Anfrage Panel (nur Führungsebene)")
 ].map(cmd => cmd.toJSON());
 
