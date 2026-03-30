@@ -53,5 +53,9 @@ module.exports = {
     ticketChannelId: "1376197567137972284", // z.B. 123456789012345678
     newsChannelId: "1487118524181647461", // z.B. 123456789012345678
     willkommenRoleId: "1376953825088376843", // z.B. 123456789012345678
-    welcomeChannelId: "1376195584116916266" // Optional: Channel für Willkommensnachricht
+    welcomeChannelId: "1376195584116916266", // Optional: Channel für Willkommensnachricht
+
+    // Channel und Rolle für Rang-Anfrage
+    rangAnfrageChannelId: "1376197150157045840", // Channel für Rang-Anfrage
+    fuehrungsebeneRoleId: "1485720583898661036" // Führungsebene-Rolle für Ping
 };
