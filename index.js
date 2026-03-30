@@ -24,6 +24,8 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
     }
 });
 
+// ...existing code...
+
 require("dotenv").config();
 const {
     Client,
