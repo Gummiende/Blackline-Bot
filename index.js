@@ -1,3 +1,23 @@
+
+require("dotenv").config();
+const {
+    Client,
+    GatewayIntentBits,
+    ActionRowBuilder,
+    StringSelectMenuBuilder,
+    Events,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
+    UserSelectMenuBuilder,
+    EmbedBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    PermissionsBitField
+} = require("discord.js");
+
+const config = require("./config");
+// ...existing code...
 // Rang-Anfrage Embed Command (z.B. beim Bot-Start einmalig ausführen oder als Admin-Command)
 client.once("ready", async () => {
     const channelId = config.rangAnfrageChannelId;
@@ -77,24 +97,6 @@ client.on(Events.InteractionCreate, async interaction => {
     // Hier kannst du die Anfrage z.B. in einen Log-Channel posten oder weiterverarbeiten
     await interaction.reply({ content: `✅ Deine Rang-Anfrage wurde eingereicht!\n\n**Name:** ${name}\n**Rang:** ${rang}\n**Grund:** ${grund}`, ephemeral: true });
 });
-require("dotenv").config();
-const {
-    Client,
-    GatewayIntentBits,
-    ActionRowBuilder,
-    StringSelectMenuBuilder,
-    Events,
-    ModalBuilder,
-    TextInputBuilder,
-    TextInputStyle,
-    UserSelectMenuBuilder,
-    EmbedBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    PermissionsBitField
-} = require("discord.js");
-
-const config = require("./config");
 
 // 🔥 RANK ROLLEN
 const rankRoles = [
