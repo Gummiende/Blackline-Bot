@@ -26,7 +26,7 @@ const client = new Client({
     ]
 });
 // Rang-Anfrage Embed Command (z.B. beim Bot-Start einmalig ausführen oder als Admin-Command)
-client.once("ready", async () => {
+client.once("clientReady", async () => {
     const channelId = config.rangAnfrageChannelId;
     const fuehrungsebeneRoleId = config.fuehrungsebeneRoleId;
     const channel = await client.channels.fetch(channelId).catch(() => null);
@@ -175,7 +175,7 @@ function createEmbed({ title, member, executor, reason, extraFields, fromText })
 }
 
 // ✅ READY
-client.once("ready", () => {
+client.once("clientReady", () => {
     console.log("✅ Blackline Bot online!");
 });
 
@@ -279,6 +279,11 @@ client.on(Events.InteractionCreate, async interaction => {
             if (interaction.customId.startsWith("role_select_")) {
                 const userId = interaction.customId.split("_")[2];
                 const newRoleId = interaction.values[0];
+                // Validate userId is a Discord snowflake (only digits, length 17-20)
+                const snowflakeRegex = /^\d{17,20}$/;
+                if (!snowflakeRegex.test(userId)) {
+                    return interaction.reply({ content: `❌ Ungültige Benutzer-ID: ${userId}`, ephemeral: true });
+                }
                 const member = await interaction.guild.members.fetch(userId);
 
                 const oldRoles = member.roles.cache.filter(r =>
@@ -367,6 +372,11 @@ client.on(Events.InteractionCreate, async interaction => {
             const split = interaction.customId.split("_");
             const type = split[1];
             const userId = split[2];
+            // Validate userId is a Discord snowflake (only digits, length 17-20)
+            const snowflakeRegex = /^\d{17,20}$/;
+            if (!snowflakeRegex.test(userId)) {
+                return interaction.reply({ content: `❌ Ungültige Benutzer-ID: ${userId}`, ephemeral: true });
+            }
             const member = await interaction.guild.members.fetch(userId);
 
             const reason = interaction.fields.getTextInputValue("reason");
@@ -431,6 +441,11 @@ client.on(Events.InteractionCreate, async interaction => {
         if (interaction.isButton()) {
             const [_, action, userId, zeitraum, ...grundParts] = interaction.customId.split("_");
             const grund = grundParts.join("_");
+            // Validate userId is a Discord snowflake (only digits, length 17-20)
+            const snowflakeRegex = /^\d{17,20}$/;
+            if (!snowflakeRegex.test(userId)) {
+                return interaction.reply({ content: `❌ Ungültige Benutzer-ID: ${userId}`, ephemeral: true });
+            }
             const member = await interaction.guild.members.fetch(userId);
 
             if (!interaction.member.roles.cache.has(config.modRoleId)) {
