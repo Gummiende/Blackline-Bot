@@ -268,6 +268,65 @@ client.on(Events.InteractionCreate, async interaction => {
         // SELECT MENU
         // -------------------
         if (interaction.isStringSelectMenu()) {
+                // Ticket-Panel Dropdown
+                if (interaction.customId === "ticket_select") {
+                    const ticketType = interaction.values[0];
+                    const ticketConfig = config.ticketSystem[ticketType];
+                    if (!ticketConfig) return interaction.reply({ content: "❌ Ticket-Konfiguration fehlt!", ephemeral: true });
+
+                    // Channel-Name je nach Typ
+                    let channelName = "ticket-" + interaction.user.username;
+                    if (ticketType === "bewerbung") channelName = `bewerbung-${interaction.user.username}`;
+                    if (ticketType === "leitungsebene") channelName = `le-${interaction.user.username}`;
+                    if (ticketType === "fuehrungsebene") channelName = `fe-${interaction.user.username}`;
+
+                    // Channel erstellen
+                    const channel = await interaction.guild.channels.create({
+                        name: channelName,
+                        type: 0, // 0 = GUILD_TEXT
+                        parent: ticketConfig.categoryId || null,
+                        permissionOverwrites: [
+                            {
+                                id: interaction.guild.roles.everyone,
+                                deny: [PermissionsBitField.Flags.ViewChannel]
+                            },
+                            {
+                                id: interaction.user.id,
+                                allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory]
+                            },
+                            // Erlaubte Rollen
+                            ...((ticketConfig.allowedRoleIds || []).map(rid => ({
+                                id: rid,
+                                allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory]
+                            }))),
+                            // Moderatorenrollen
+                            ...((ticketConfig.moderatorRoleIds || []).map(rid => ({
+                                id: rid,
+                                allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory, PermissionsBitField.Flags.ManageChannels]
+                            })))
+                        ]
+                    });
+
+                    // Willkommensnachricht und Embed
+                    await channel.send({
+                        content: `<@${interaction.user.id}> Herzlich Willkommen in ihrem Ticket! Ein Mitglied unseres Teams wird in kürze bei ihnen sein.`
+                    });
+                    const ticketEmbed = new EmbedBuilder()
+                        .setColor("#660909")
+                        .setTitle("Support Ticket Verwaltung")
+                        .setDescription(
+                            'Um das Ticket zu schließen, drücken sie auf "🔒 Schließen"\n\n:w_arrow: Bitte beachten sie das vorgegebene Format falls vorhanden.'
+                        );
+                    const closeButton = new ButtonBuilder()
+                        .setCustomId("ticket_close")
+                        .setLabel("🔒 Schließen")
+                        .setStyle(ButtonStyle.Danger);
+                    const row = new ActionRowBuilder().addComponents(closeButton);
+                    await channel.send({ embeds: [ticketEmbed], components: [row] });
+
+                    await interaction.reply({ content: `✅ Ticket erstellt: <#${channel.id}>`, ephemeral: true });
+                    return;
+                }
             if (interaction.customId === "aktion_auswahl") {
                 const aktion = interaction.values[0];
                 const userMenu = new UserSelectMenuBuilder()
@@ -296,7 +355,137 @@ client.on(Events.InteractionCreate, async interaction => {
                 );
                 const oldRole = oldRoles.first();
                 for (const role of oldRoles.values()) {
+
+                                // Ticket schließen: Modal für Grund anzeigen
+                                if (interaction.customId === "ticket_close") {
+                                    const modal = new ModalBuilder()
+                                        .setCustomId("ticket_close_modal")
+                                        .setTitle("Ticket schließen");
+                                    modal.addComponents(
+                                        new ActionRowBuilder().addComponents(
+                                            new TextInputBuilder()
+                                                .setCustomId("close_reason")
+                                                .setLabel("Grund für das Schließen")
+                                                .setStyle(TextInputStyle.Paragraph)
+                                                .setRequired(true)
+                                        )
+                                    );
+                                    await interaction.showModal(modal);
+                                    return;
+                                }
                     await member.roles.remove(role.id).catch(console.error);
+                        // Ticket schließen: Modal-Submit
+                        if (interaction.isModalSubmit() && interaction.customId === "ticket_close_modal") {
+                            const reason = interaction.fields.getTextInputValue("close_reason");
+                            const channel = interaction.channel;
+                            // Ticket-Typ anhand Channel-Name bestimmen
+                            let ticketType = null;
+                            if (channel.name.startsWith("bewerbung-")) ticketType = "bewerbung";
+                            if (channel.name.startsWith("le-")) ticketType = "leitungsebene";
+                            if (channel.name.startsWith("fe-")) ticketType = "fuehrungsebene";
+                            const ticketConfig = config.ticketSystem[ticketType] || {};
+                            // Channel in geschlossene Kategorie verschieben
+                            if (config.closedTicketsCategoryId) {
+                                await channel.setParent(config.closedTicketsCategoryId).catch(() => {});
+                            }
+                            // Verwaltungsembed mit Buttons
+                            const manageEmbed = new EmbedBuilder()
+                                .setColor("#660909")
+                                .setTitle("Support Ticket Verwaltung")
+                                .setDescription(`Das Ticket wurde geschlossen.\n\n**Grund:** ${reason}\n**Geschlossen von:** <@${interaction.user.id}>`);
+                            const transcriptBtn = new ButtonBuilder()
+                                .setCustomId("ticket_transcript")
+                                .setLabel("Transcript senden")
+                                .setStyle(ButtonStyle.Primary);
+                            const reopenBtn = new ButtonBuilder()
+                                .setCustomId("ticket_reopen")
+                                .setLabel("Öffnen")
+                                .setStyle(ButtonStyle.Success);
+                            const deleteBtn = new ButtonBuilder()
+                                .setCustomId("ticket_delete")
+                                .setLabel("Löschen")
+                                .setStyle(ButtonStyle.Danger);
+                            const row = new ActionRowBuilder().addComponents(transcriptBtn, reopenBtn, deleteBtn);
+                            await channel.send({ embeds: [manageEmbed], components: [row] });
+                            // Channel für alle außer Mod/Ersteller schließen
+                            await channel.permissionOverwrites.edit(channel.guild.roles.everyone, { ViewChannel: false });
+                            await channel.permissionOverwrites.edit(interaction.user.id, { ViewChannel: false });
+                            await interaction.reply({ content: "✅ Ticket geschlossen!", ephemeral: true });
+                            // Speichere Grund/Schließenden ggf. in channel.topic oder DB für reopen/transcript
+                            channel.topic = JSON.stringify({
+                                closedBy: interaction.user.id,
+                                closeReason: reason,
+                                ticketType: ticketType
+                            });
+                            return;
+                        }
+
+                        // Ticket Transcript senden
+                        if (interaction.isButton() && interaction.customId === "ticket_transcript") {
+                            const channel = interaction.channel;
+                            let ticketType = null;
+                            if (channel.name.startsWith("bewerbung-")) ticketType = "bewerbung";
+                            if (channel.name.startsWith("le-")) ticketType = "leitungsebene";
+                            if (channel.name.startsWith("fe-")) ticketType = "fuehrungsebene";
+                            const ticketConfig = config.ticketSystem[ticketType] || {};
+                            // Nachrichten abrufen
+                            const messages = await channel.messages.fetch({ limit: 100 });
+                            const sorted = Array.from(messages.values()).sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+                            let transcript = `Transcript von #${channel.name}\n`;
+                            for (const msg of sorted) {
+                                transcript += `[${new Date(msg.createdTimestamp).toLocaleString()}] ${msg.author.tag}: ${msg.content}\n`;
+                            }
+                            // Grund und Schließenden aus topic
+                            let meta = {};
+                            try { meta = JSON.parse(channel.topic); } catch {}
+                            transcript += `\n---\nGrund: ${meta.closeReason || "-"}\nGeschlossen von: <@${meta.closedBy || "-"}>`;
+                            // Transcript senden
+                            if (ticketConfig.transcriptChannelId) {
+                                const transcriptChannel = await channel.guild.channels.fetch(ticketConfig.transcriptChannelId).catch(() => null);
+                                if (transcriptChannel) {
+                                    await transcriptChannel.send({
+                                        content: `Transcript von <#${channel.id}>`,
+                                        files: [{ attachment: Buffer.from(transcript, "utf-8"), name: `${channel.name}-transcript.txt` }]
+                                    });
+                                    await interaction.reply({ content: "📄 Transcript gesendet!", ephemeral: true });
+                                } else {
+                                    await interaction.reply({ content: "❌ Transcript-Channel nicht gefunden!", ephemeral: true });
+                                }
+                            } else {
+                                await interaction.reply({ content: "❌ Kein Transcript-Channel konfiguriert!", ephemeral: true });
+                            }
+                            return;
+                        }
+
+                        // Ticket wieder öffnen
+                        if (interaction.isButton() && interaction.customId === "ticket_reopen") {
+                            const channel = interaction.channel;
+                            let ticketType = null;
+                            if (channel.name.startsWith("bewerbung-")) ticketType = "bewerbung";
+                            if (channel.name.startsWith("le-")) ticketType = "leitungsebene";
+                            if (channel.name.startsWith("fe-")) ticketType = "fuehrungsebene";
+                            // Ersteller aus topic holen
+                            let meta = {};
+                            try { meta = JSON.parse(channel.topic); } catch {}
+                            if (meta.closedBy) {
+                                await channel.permissionOverwrites.edit(meta.closedBy, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true });
+                            }
+                            // Channel wieder in Ursprungs-Kategorie verschieben
+                            const ticketConfig = config.ticketSystem[ticketType] || {};
+                            if (ticketConfig.categoryId) {
+                                await channel.setParent(ticketConfig.categoryId).catch(() => {});
+                            }
+                            await interaction.reply({ content: "🔓 Ticket wieder geöffnet!", ephemeral: true });
+                            return;
+                        }
+
+                        // Ticket löschen
+                        if (interaction.isButton() && interaction.customId === "ticket_delete") {
+                            const channel = interaction.channel;
+                            await interaction.reply({ content: "⏳ Ticket wird gelöscht...", ephemeral: true });
+                            setTimeout(() => channel.delete().catch(() => {}), 2000);
+                            return;
+                        }
                 }
 
                 await member.roles.add(newRoleId);
