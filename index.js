@@ -1,3 +1,28 @@
+// Lösche Rang-Anfrage-Nachricht, wenn Führungsebene mit :BLP_Flagge: reagiert
+client.on(Events.MessageReactionAdd, async (reaction, user) => {
+    try {
+        // Stelle sicher, dass alle Daten geladen sind
+        if (reaction.partial) await reaction.fetch();
+        if (reaction.message.partial) await reaction.message.fetch();
+        if (user.bot) return;
+
+        // Emoji prüfen (Name oder ID)
+        if (reaction.emoji.name !== "BLP_Flagge") return;
+
+        // Prüfe, ob Nachricht ein Rang-Anfrage Embed ist
+        const embed = reaction.message.embeds?.[0];
+        if (!embed || embed.title !== "Neue Rang-Anfrage") return;
+
+        // Prüfe, ob User Führungsebene ist
+        const member = await reaction.message.guild.members.fetch(user.id).catch(() => null);
+        if (!member || !member.roles.cache.has(config.fuehrungsebeneRoleId)) return;
+
+        // Nachricht löschen
+        await reaction.message.delete().catch(() => {});
+    } catch (err) {
+        console.error("Fehler beim Löschen der Rang-Anfrage-Nachricht:", err);
+    }
+});
 
 require("dotenv").config();
 const {
@@ -494,10 +519,10 @@ client.on(Events.GuildMemberAdd, async member => {
         .setTitle("🎉 **Herzlich Willkommen bei Blackline Performance!** 🎉")
         .setDescription(
             "Schön, dass du hier bist! 🙌\n\n" +
-            `Bevor du loslegst, nimm dir bitte kurz Zeit für unsere **📜 Hausordnung-Channel** (<#${hausordnungChannelId}>). So sorgen wir gemeinsam für eine entspannte und respektvolle Community.\n\n` +
+            `Bevor du loslegst, nimm dir bitte kurz Zeit für unsere (<#${hausordnungChannelId}>). So sorgen wir gemeinsam für eine entspannte und respektvolle Community.\n\n` +
             "❗ **Wichtig für dich:**\n" +
-            `• Bei Fragen oder Problemen kannst du jederzeit ein Ticket im **🎫 Ticket-Channel** (<#${ticketChannelId}>) erstellen – unser Team hilft dir schnell weiter!\n` +
-            `• Verpasse keine News, Aktionen oder **Rabatte** 💸 – behalte unbedingt den **📢 Ankündigungs-Channel** (<#${newsChannelId}>) im Auge!\n` +
+            `• Bei Fragen oder Problemen kannst du jederzeit ein Ticket im (<#${ticketChannelId}>) erstellen – unser Team hilft dir schnell weiter!\n` +
+            `• Verpasse keine News, Aktionen oder **Rabatte** 💸 – behalte unbedingt den (<#${newsChannelId}>) im Auge!\n` +
             "• Bleib freundlich und respektvoll – wir wollen, dass sich hier jeder wohlfühlt 🤝\n\n" +
             "Mit freundlichen Grüßen,\n" +
             `<@&${willkommenRoleId}>`
