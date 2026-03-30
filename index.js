@@ -54,6 +54,46 @@ client.once("clientReady", async () => {
         embeds: [embed],
         components: [row]
     });
+
+    // Ticket-Panel automatisch senden
+    const ticketPanelChannelId = "1376197567137972284";
+    const ticketPanelChannel = await client.channels.fetch(ticketPanelChannelId).catch(() => null);
+    if (ticketPanelChannel) {
+        const ticketEmbed = new EmbedBuilder()
+            .setColor("#660909")
+            .setTitle("**Blackline Performance Support**")
+            .setDescription(":BLP_Flagge: Drücke auf das Dropdown Menü um eine Kategorie auszuwählen :BLP_Flagge:");
+
+        const selectMenu = new StringSelectMenuBuilder()
+            .setCustomId("ticket_select")
+            .setPlaceholder("Kategorie auswählen...")
+            .addOptions([
+                {
+                    label: "Bewerbung",
+                    value: "bewerbung",
+                    description: "Hier kannst du dich als Mechaniker bewerben",
+                    emoji: "📋"
+                },
+                {
+                    label: "Leitungsebene",
+                    value: "leitungsebene",
+                    description: "Hier kommst du ins Gespräch mit der Leitungsebene",
+                    emoji: "🧪"
+                },
+                {
+                    label: "Führungsebene",
+                    value: "fuehrungsebene",
+                    description: "Hier kommst du ins Gespräch mit der Führungsebene",
+                    emoji: "👑"
+                }
+            ]);
+
+        const ticketRow = new ActionRowBuilder().addComponents(selectMenu);
+        await ticketPanelChannel.send({
+            embeds: [ticketEmbed],
+            components: [ticketRow]
+        });
+    }
 });
 
 
