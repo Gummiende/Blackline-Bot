@@ -26,6 +26,31 @@ module.exports = {
         "1376207536579022959"
     ],
 
+    // Ticket-System Kategorien und Rollen
+    ticketSystem: {
+        bewerbung: {
+            categoryId: "1376960688991244320", // Kategorie-ID für Bewerbungstickets
+            allowedRoleIds: ["1376207540064489644"], // Rollen, die Zugriff auf Bewerbungstickets haben
+            moderatorRoleIds: ["1485720724986663122", "1485720583898661036"] // Moderatorenrollen für Bewerbungstickets
+            , transcriptChannelId: "1377266005239136297" // Channel für Transcripts dieser Kategorie
+        },
+        leitungsebene: {
+            categoryId: "1379177716380860508", // Kategorie-ID für Leitungsebene-Tickets
+            allowedRoleIds: ["1376207540064489644"],
+            moderatorRoleIds: ["1485720724986663122", "1485720583898661036"]
+            , transcriptChannelId: "1487154224109322365"
+        },
+        fuehrungsebene: {
+            categoryId: "1379177800375861338", // Kategorie-ID für Führungsebene-Tickets
+            allowedRoleIds: ["1376207540064489644"],
+            moderatorRoleIds: ["1485720724986663122"]
+            , transcriptChannelId: "1487154271404298442"
+        }
+    },
+
+    // Kategorie für geschlossene Tickets (alle Ticketarten)
+    closedTicketsCategoryId: "1377263994737524816", // z.B. 123456789012345678
+
     // Rollen, die immer behalten werden sollen
     keepRolesAlways: [
         "1485722559034032168",
